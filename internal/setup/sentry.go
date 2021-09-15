@@ -7,18 +7,20 @@ import (
 )
 
 type SentryOptions struct {
-	DSN        string
-	SampleRate float64
-	Server     string
+	DSN              string
+	SampleRate       float64
+	TracesSampleRate float64
+	Server           string
 }
 
 // Sentry sets up a *sentry.Hub.
 func Sentry(o SentryOptions) (*sentry.Hub, error) {
 	c, err := sentry.NewClient(sentry.ClientOptions{
-		Dsn:        o.DSN,
-		SampleRate: o.SampleRate,
-		ServerName: o.Server,
-		Release:    meta.Version,
+		Dsn:              o.DSN,
+		SampleRate:       o.SampleRate,
+		TracesSampleRate: o.TracesSampleRate,
+		ServerName:       o.Server,
+		Release:          meta.Version,
 	})
 	if err != nil {
 		return nil, err

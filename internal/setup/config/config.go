@@ -2,70 +2,66 @@
 package config
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 
+	"github.com/caarlos0/env/v6"
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/providers/env"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/providers/structs"
 )
 
 type (
 	Config struct {
-		BotToken string           `koanf:"bottoken"`
-		Owners   []discord.UserID `koanf:"owners"`
+		BotToken string           `env:"STORMY_BOT_TOKEN,notEmpty"`
+		Owners   []discord.UserID `env:"STORMY_OWNERS"`
 
-		Status   discord.Status `koanf:"status"`
-		Activity Activity       `koanf:"activity"`
+		Status   discord.Status `env:"STORMY_STATUS"`
+		Activity Activity
 
-		Sentry Sentry `koanf:"sentry"`
-		Mongo  Mongo  `koanf:"mongo"`
+		Sentry Sentry
+		Mongo  Mongo
 	}
 
 	Activity struct {
-		Type discord.ActivityType `koanf:"type"`
-		Name string               `koanf:"name"`
-		URL  discord.URL          `koanf:"url"`
+		Type discord.ActivityType `env:"STORMY_ACTIVITY_TYPE"`
+		Name string               `env:"STORMY_ACTIVITY_NAME"`
+		URL  discord.URL          `env:"STORMY_ACTIVITY_URL"`
 	}
 
 	Sentry struct {
-		DSN        string  `koanf:"dsn"`
-		Server     string  `koanf:"server"`
-		SampleRate float64 `koanf:"samplerate"`
+		DSN              string  `env:"STORMY_SENTRY_DSN"`
+		Server           string  `env:"STORMY_SENTRY_SERVER"`
+		SampleRate       float64 `env:"STORMY_SENTRY_SAMPLE_RATE"`
+		TracesSampleRate float64 `env:"STORMY_SENTRY_TRACES_SAMPLE_RATE"`
 	}
 
 	Mongo struct {
-		URI    string `koanf:"uri"`
-		DBName string `koanf:"dbname"`
+		URI    string `env:"SENTRY_MONGO_URI"`
+		DBName string `env:"SENTRY_MONGO_DB_NAME"`
 	}
 )
 
-var defaultConfig = &Config{
-	Status: discord.OnlineStatus,
+var parseFuncs = map[reflect.Type]env.ParserFunc{
+	reflect.TypeOf(discord.ActivityType(0)): parseActivityType,
 }
 
-func Read(configFilePath string) (c *Config, err error) {
-	k := koanf.New(".")
+func Read() (*Config, error) {
+	c := &Config{Status: discord.OnlineStatus}
 
-	if err := k.Load(structs.Provider(defaultConfig, "koanf"), nil); err != nil {
-		return nil, err
-	}
-
-	// try to load
-	_ = k.Load(file.Provider(configFilePath), json.Parser())
-
-	err = k.Load(env.Provider("STORMY_", ".", envReplacer("STORMY_")), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return c, k.Unmarshal("", &c)
+	return c, env.ParseWithFuncs(c, parseFuncs)
 }
 
-func envReplacer(prefix string) func(string) string {
-	return func(s string) string {
-		return strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(prefix, s)), "_", ".")
+func parseActivityType(activityStr string) (interface{}, error) {
+	switch strings.ToLower(activityStr) {
+	case "game", "playing":
+		return discord.GameActivity, nil
+	case "streaming":
+		return discord.StreamingActivity, nil
+	case "listening":
+		return discord.ListeningActivity, nil
+	case "watching":
+		return discord.WatchingActivity, nil
+	default:
+		return nil, fmt.Errorf("config: unknown activity type '%s'", activityStr)
 	}
 }
