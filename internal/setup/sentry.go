@@ -15,6 +15,10 @@ type SentryOptions struct {
 
 // Sentry sets up a *sentry.Hub.
 func Sentry(o SentryOptions) (*sentry.Hub, error) {
+	if o.DSN == "" {
+		return sentry.NewHub(nil, sentry.NewScope()), nil
+	}
+
 	c, err := sentry.NewClient(sentry.ClientOptions{
 		Dsn:              o.DSN,
 		SampleRate:       o.SampleRate,

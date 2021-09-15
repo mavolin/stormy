@@ -11,42 +11,40 @@ import (
 	"github.com/mavolin/stormy/internal/zapadam"
 )
 
-// CommandError returns the logger function used for errors.Log.
+// ErrorLog returns the logger function used for errors.Log.
 // It logs the error using the passed *zap.SugaredLogger, and extracts the
 // assigned *sentry.Hub and *zap.SugaredLogger from the context using sentryadam.Get.
-func CommandError() func(error, *plugin.Context) {
-	return func(err error, ctx *plugin.Context) {
-		sentryadam.Hub(ctx).CaptureException(err)
+func ErrorLog(err error, ctx *plugin.Context) {
+	sentryadam.Hub(ctx).CaptureException(err)
 
-		l := zapadam.Get(ctx).With("err", err)
+	l := zapadam.Get(ctx).With("err", err)
 
-		if serr, ok := err.(interface{ StackTrace() errors.StackTrace }); ok {
-			l.With("stack_trace", serr.StackTrace().String())
-		}
-
-		l.Error("error during command execution")
+	if serr, ok := err.(interface{ StackTrace() errors.StackTrace }); ok {
+		l.With("stack_trace", serr.StackTrace().String())
 	}
+
+	l.Error("error during command execution")
 }
 
-// Gateway returns the error handler function used for the
+// NewGateway returns the error handler function used for the
 // bot.Options.GatwayErrorHandler.
-func Gateway(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
+func NewGateway(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	l = l.Named("gateway")
 
 	h = h.Clone()
 	h.Scope().SetTransaction("gateway")
 
 	return func(err error) {
-		if bot.FilterGatewayError(err) {
+		if !bot.FilterGatewayError(err) {
 			h.CaptureException(err)
 			l.Error(err)
 		}
 	}
 }
 
-// StateError returns the logger function used for the
+// NewStateError returns the logger function used for the
 // bot.Option.StateErrorHandler.
-func StateError(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
+func NewStateError(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	l = l.Named("state")
 
 	h = h.Clone()
@@ -58,9 +56,9 @@ func StateError(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	}
 }
 
-// StatePanic returns the logger function used for the
+// NewStatePanic returns the logger function used for the
 // bot.Option.StatePanicHandler.
-func StatePanic(l *zap.SugaredLogger, h *sentry.Hub) func(interface{}) {
+func NewStatePanic(l *zap.SugaredLogger, h *sentry.Hub) func(interface{}) {
 	l = l.Named("state")
 
 	h = h.Clone()

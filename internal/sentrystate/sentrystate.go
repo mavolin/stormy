@@ -12,20 +12,16 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/state"
 )
 
-type hubKey struct{}
 type spanKey struct{}
 
-var (
-	HubKey  = new(hubKey)
-	SpanKey = new(spanKey)
-)
+var SpanKey = new(spanKey)
 
 // Hub retrieves the *sentry.Hub from the passed *event.Base.
 // In order for Hub to return with a non-nil *sentry.Hub, a hub must have
 // previously been stored under the HubKey by a middleware such as the one
-// returned by Middleware.
+// returned by NewMiddleware.
 func Hub(b *event.Base) *sentry.Hub {
-	if hub := b.Get(HubKey); hub != nil {
+	if hub := b.Get(sentry.HubContextKey); hub != nil {
 		if hub, ok := hub.(*sentry.Hub); ok && hub != nil {
 			return hub
 		}
@@ -37,7 +33,7 @@ func Hub(b *event.Base) *sentry.Hub {
 // Transaction retrieves the *sentry.Span from the passed *event.Base.
 // In order for Transaction to return with a non-nil *sentry.Span, a span must
 // have previously been stored under the SpanKey by a middleware such as the
-// one returned by Middleware.
+// one returned by NewMiddleware.
 func Transaction(b *event.Base) *sentry.Span {
 	if span := b.Get(SpanKey); span != nil {
 		if span, ok := span.(*sentry.Span); ok && span != nil {
@@ -56,13 +52,13 @@ type HandlerMeta struct {
 	Trace          bool
 }
 
-// Middleware creates a new middleware that attaches a *sentry.Hub to the
+// NewMiddleware creates a new middleware that attaches a *sentry.Hub to the
 // event's base.
 //
-// Optionally, if Trace is set to true, Middleware will also start a Span that
+// Optionally, if Trace is set to true, NewMiddleware will also start a Span that
 // must be finished by the handler by calling Transaction(event.Base).Finish at
 // the end of the function.
-func Middleware(m HandlerMeta) func(*state.State, interface{}) {
+func NewMiddleware(m HandlerMeta) func(*state.State, interface{}) {
 	var transactionBuilder strings.Builder
 	transactionBuilder.Grow(
 		len(m.PluginProvider) + len("/") + len(m.PluginID) + len("/") + len(m.Operation),
@@ -90,7 +86,7 @@ func Middleware(m HandlerMeta) func(*state.State, interface{}) {
 		h.Scope().SetTransaction(transactionName)
 		h.Scope().SetExtra("event", e)
 
-		b.Set(HubKey, h)
+		b.Set(sentry.HubContextKey, h)
 
 		if m.Trace {
 			ctx := sentry.SetHubOnContext(context.Background(), h)
