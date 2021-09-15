@@ -1,3 +1,4 @@
+// Package config reads the application's configuration.
 package config
 
 import (

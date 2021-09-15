@@ -1,5 +1,4 @@
-// Package log provides logging using the zap logger.
-package log
+package setup
 
 import (
 	"time"
@@ -8,11 +7,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type Options struct {
+type LoggerOptions struct {
 	Debug bool
 }
 
-func New(o Options) (*zap.SugaredLogger, error) {
+// Logger sets up the logger.
+func Logger(o LoggerOptions) (*zap.SugaredLogger, error) {
 	core, err := newCore(o)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func New(o Options) (*zap.SugaredLogger, error) {
 	return zap.New(core, zapOptions(o)...).Sugar(), nil
 }
 
-func newCore(o Options) (zapcore.Core, error) {
+func newCore(o LoggerOptions) (zapcore.Core, error) {
 	lvl := zap.InfoLevel
 	if o.Debug {
 		lvl = zap.DebugLevel
@@ -45,7 +45,7 @@ func newCore(o Options) (zapcore.Core, error) {
 	return core, nil
 }
 
-func zapOptions(o Options) (zopts []zap.Option) {
+func zapOptions(o LoggerOptions) (zopts []zap.Option) {
 	if o.Debug {
 		zopts = append(zopts, zap.Development(), zap.AddStacktrace(zapcore.WarnLevel))
 	} else {

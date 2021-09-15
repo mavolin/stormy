@@ -1,3 +1,4 @@
+// Package meta provides meta data about the application.
 package meta
 
 // Version is the current version.
