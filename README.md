@@ -5,7 +5,7 @@
 [![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/mavolin/stormy/Test/v1?label=tests)](https://github.com/mavolin/stormy/actions)
 [![codecov](https://codecov.io/gh/mavolin/stormy/branch/v1/graph/badge.svg?token=3qRIAudu4r)](https://codecov.io/gh/mavolin/stormy)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mavolin/stormy)](https://goreportcard.com/report/github.com/mavolin/stormy)
-[![License](https://img.shields.io/github/license/mavolin/stormy)](https://github.com/mavolin/stormy/blob/v2/LICENSE)
+[![License](https://img.shields.io/github/license/mavolin/stormy)](https://github.com/mavolin/stormy/blob/v1/LICENSE)
 </div>
 
 ---
