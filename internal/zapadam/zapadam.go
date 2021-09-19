@@ -18,7 +18,7 @@ func Get(ctx *plugin.Context) *zap.SugaredLogger {
 		}
 	}
 
-	return nil
+	return zap.NewNop().Sugar()
 }
 
 // NewMiddleware returns a bot.Middleware that logs the invocation of the command
@@ -27,14 +27,32 @@ func Get(ctx *plugin.Context) *zap.SugaredLogger {
 func NewMiddleware(l *zap.SugaredLogger) bot.Middleware {
 	return func(next bot.CommandFunc) bot.CommandFunc {
 		return func(s *state.State, ctx *plugin.Context) error {
-			l := l.Named("cmd:" + ctx.InvokedCommand.SourceName() + "/" + string(ctx.InvokedCommand.ID()[1:]))
-			l.With(
+			l := l.Named("cmd:"+ctx.InvokedCommand.SourceName()+"/"+string(ctx.InvokedCommand.ID()[1:])).
+				With(
+					"guild_id", ctx.GuildID,
+					"channel_id", ctx.ChannelID,
+					"message_id", ctx.Message.ID,
+					"author_id", ctx.Author.ID,
+				)
+			l.Info(ctx.InvokedCommand.ID(), " was invoked")
+			ctx.Set(key{}, l)
+
+			return next(s, ctx)
+		}
+	}
+}
+
+// NewFallbackMiddleware creates a new middleware that adds a fallback logger
+// to be used to log errors that occur during routing.
+func NewFallbackMiddleware(l *zap.SugaredLogger) bot.Middleware {
+	return func(next bot.CommandFunc) bot.CommandFunc {
+		return func(s *state.State, ctx *plugin.Context) error {
+			l := l.With(
 				"guild_id", ctx.GuildID,
 				"channel_id", ctx.ChannelID,
 				"message_id", ctx.Message.ID,
 				"author_id", ctx.Author.ID,
-			).Info(ctx.InvokedCommand.ID(), " was invoked")
-
+			)
 			ctx.Set(key{}, l)
 
 			return next(s, ctx)

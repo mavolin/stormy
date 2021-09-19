@@ -5,29 +5,36 @@ import (
 	"github.com/mavolin/adam/pkg/bot"
 	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/plugin"
+	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
 
-	"github.com/mavolin/stormy/internal/sentryadam"
 	"github.com/mavolin/stormy/internal/zapadam"
 )
 
+func init() {
+	errors.Log = ErrorLog
+}
+
 // ErrorLog returns the logger function used for errors.Log.
 // It logs the error using the passed *zap.SugaredLogger, and extracts the
-// assigned *sentry.Hub and *zap.SugaredLogger from the context using sentryadam.Get.
-func ErrorLog(err error, ctx *plugin.Context) {
+// assigned *sentry.Hub and *zap.SugaredLogger from the context using
+// sentryadam.Hub.
+func ErrorLog(ctx *plugin.Context, err *errors.InternalError) {
 	sentryadam.Hub(ctx).CaptureException(err)
 
-	l := zapadam.Get(ctx).With("err", err)
+	l := zapadam.Get(ctx).
+		With("err", err.Unwrap())
 
-	if serr, ok := err.(interface{ StackTrace() errors.StackTrace }); ok {
-		l.With("stack_trace", serr.StackTrace().String())
+	var tracer errors.StackTracer
+	if errors.As(err, &tracer) {
+		l.With("stack_trace", tracer.StackTrace().String())
 	}
 
 	l.Error("error during command execution")
 }
 
 // NewGateway returns the error handler function used for the
-// bot.Options.GatwayErrorHandler.
+// bot.Options.GatewayErrorHandler.
 func NewGateway(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	l = l.Named("gateway")
 

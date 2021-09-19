@@ -11,10 +11,10 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/mavolin/adam/pkg/bot"
 	"github.com/mavolin/adam/pkg/impl/command/help"
+	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
 
 	"github.com/mavolin/stormy/internal/errhandler"
-	"github.com/mavolin/stormy/internal/sentryadam"
 	"github.com/mavolin/stormy/internal/setup"
 	"github.com/mavolin/stormy/internal/setup/config"
 	"github.com/mavolin/stormy/internal/zapadam"
@@ -90,7 +90,10 @@ func run(l *zap.SugaredLogger) error {
 }
 
 func addMiddlewares(b *bot.Bot, l *zap.SugaredLogger, hub *sentry.Hub) {
-	b.AddMiddleware(sentryadam.NewPreRouteMiddleware(hub))
+	sentryWrapper := sentryadam.New(sentryadam.Options{Hub: hub})
+
+	b.AddMiddleware(sentryWrapper.PreRouteMiddleware)
+	b.AddMiddleware(zapadam.NewFallbackMiddleware(l))
 	b.AddMiddleware(bot.CheckMessageType)
 	b.AddMiddleware(bot.CheckHuman) // if Options.AllowBot is true
 	b.AddMiddleware(bot.NewSettingsRetriever(bot.NewStaticSettingsProvider()))
@@ -99,13 +102,13 @@ func addMiddlewares(b *bot.Bot, l *zap.SugaredLogger, hub *sentry.Hub) {
 	b.AddMiddleware(bot.CheckChannelTypes)
 	b.AddMiddleware(bot.CheckBotPermissions)
 	b.AddMiddleware(bot.NewThrottlerChecker(bot.DefaultThrottlerErrorCheck))
+	b.AddMiddleware(sentryWrapper.PostRouteMiddleware)
 
-	b.AddMiddleware(sentryadam.PostRouteMiddleware)
 	b.AddMiddleware(zapadam.NewMiddleware(l))
 
 	b.AddPostMiddleware(bot.CheckRestrictions)
 	b.AddPostMiddleware(bot.ParseArgs)
-	b.AddPostMiddleware(sentryadam.PreInvokeMiddleware)
+	b.AddPostMiddleware(sentryWrapper.PreInvokeMiddleware)
 	b.AddPostMiddleware(bot.InvokeCommand)
 }
 
