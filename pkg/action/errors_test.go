@@ -10,7 +10,7 @@ import (
 )
 
 // =============================================================================
-// EnabledError
+// AlreadyEnabledError
 // =====================================================================================
 
 func TestEnabledError_As(t *testing.T) {
@@ -34,7 +34,7 @@ func TestEnabledError_As(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 
-			expect := NewEnabledError("abc")
+			expect := NewAlreadyEnabledError("abc")
 
 			require.Truef(t, errors.As(expect, c.Target), "errors.As returned false for %T", c.Target)
 
@@ -45,7 +45,7 @@ func TestEnabledError_As(t *testing.T) {
 }
 
 // =============================================================================
-// DisabledError
+// AlreadyDisabledError
 // =====================================================================================
 
 func TestDisabledError_As(t *testing.T) {
@@ -69,7 +69,7 @@ func TestDisabledError_As(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 
-			expect := NewDisabledError("abc")
+			expect := NewAlreadyDisabledError("abc")
 
 			require.Truef(t, errors.As(expect, c.Target), "errors.As returned false for %T", c.Target)
 
