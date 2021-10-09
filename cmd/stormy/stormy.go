@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	stdlog "log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/mavolin/adam/pkg/bot"
@@ -19,6 +19,9 @@ import (
 	"github.com/mavolin/stormy/internal/setup/config"
 	"github.com/mavolin/stormy/internal/zapadam"
 	"github.com/mavolin/stormy/internal/zapstate"
+	"github.com/mavolin/stormy/pkg/action"
+	actionmod "github.com/mavolin/stormy/plugin/action"
+	"github.com/mavolin/stormy/plugin/do"
 )
 
 var debug = flag.Bool("debug", false, "whether to run in debug mode")
@@ -76,7 +79,7 @@ func run(l *zap.SugaredLogger) error {
 	addPlugins(b)
 
 	l.Info("starting bot")
-	if err := b.Open(context.Background()); err != nil {
+	if err = b.Open(4 * time.Second); err != nil {
 		return err
 	}
 
@@ -112,6 +115,9 @@ func addMiddlewares(b *bot.Bot, l *zap.SugaredLogger, hub *sentry.Hub) {
 	b.AddPostMiddleware(bot.InvokeCommand)
 }
 
-func addPlugins(b *bot.Bot) {
+func addPlugins(b *bot.Bot, actions ...action.Action) {
 	b.AddCommand(help.New(help.Options{}))
+
+	b.AddModule(actionmod.New(actions...))
+	b.AddModule(do.New(actions...))
 }
