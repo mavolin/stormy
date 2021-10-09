@@ -25,12 +25,12 @@ var _ plugin.Command = new(Enable)
 func New(actions ...action.Action) *Enable {
 	return &Enable{
 		Meta: command.Meta{
-			Name: "enable",
-			ShortDescription: "Enable an action in the calling channel, " +
-				"or the channel specified using the `channel` flag.",
-			ChannelTypes:   plugin.GuildTextChannels,
-			BotPermissions: discord.PermissionSendMessages,
-			Restrictions:   restriction.UserPermissions(discord.PermissionManageChannels),
+			Name:             "enable",
+			Aliases:          []string{"off"},
+			ShortDescription: "Enable an action in the calling channel.",
+			ChannelTypes:     plugin.GuildTextChannels,
+			BotPermissions:   discord.PermissionSendMessages,
+			Restrictions:     restriction.UserPermissions(discord.PermissionManageChannels),
 		},
 		actions: actions,
 	}
