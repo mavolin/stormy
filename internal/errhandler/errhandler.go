@@ -22,15 +22,10 @@ func init() {
 func ErrorLog(ctx *plugin.Context, err *errors.InternalError) {
 	sentryadam.Hub(ctx).CaptureException(err)
 
-	l := zapadam.Get(ctx).
-		With("err", err.Unwrap())
-
-	var tracer errors.StackTracer
-	if errors.As(err, &tracer) {
-		l.With("stack_trace", tracer.StackTrace().String())
-	}
-
-	l.Error("error during command execution")
+	zapadam.Get(ctx).
+		With("err", err.Unwrap()).
+		With("stack_trace", err.StackTrace().String()).
+		Error("error during command execution")
 }
 
 // NewGateway returns the error handler function used for the

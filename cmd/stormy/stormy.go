@@ -99,7 +99,7 @@ func addMiddlewares(b *bot.Bot, l *zap.SugaredLogger, hub *sentry.Hub) {
 	b.AddMiddleware(zapadam.NewFallbackMiddleware(l))
 	b.AddMiddleware(bot.CheckMessageType)
 	b.AddMiddleware(bot.CheckHuman) // if Options.AllowBot is true
-	b.AddMiddleware(bot.NewSettingsRetriever(bot.NewStaticSettingsProvider()))
+	b.AddMiddleware(bot.NewSettingsRetriever(bot.StaticSettings()))
 	b.AddMiddleware(bot.CheckPrefix)
 	b.AddMiddleware(bot.FindCommand)
 	b.AddMiddleware(bot.CheckChannelTypes)
