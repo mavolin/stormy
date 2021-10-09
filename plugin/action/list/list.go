@@ -27,7 +27,8 @@ func New(actions ...action.Action) *List {
 	return &List{
 		Meta: command.Meta{
 			Name:             "list",
-			ShortDescription: "List all of the actions used in this channel.",
+			Aliases:          []string{"ls"},
+			ShortDescription: "List all of the actions enabled in this channel.",
 			ChannelTypes:     plugin.GuildTextChannels,
 			BotPermissions:   discord.PermissionSendMessages,
 			Restrictions:     restriction.UserPermissions(discord.PermissionManageChannels),
@@ -60,7 +61,7 @@ func (l *List) Invoke(_ *state.State, ctx *plugin.Context) (interface{}, error) 
 		listBuilder.WriteString("• ")
 		listBuilder.WriteString(a.Name())
 
-		if len(instances) == 0 {
+		if a.IsSingleInstance() {
 			continue
 		}
 
@@ -76,7 +77,7 @@ func (l *List) Invoke(_ *state.State, ctx *plugin.Context) (interface{}, error) 
 
 	if listBuilder.Len() == 0 && errOccurred {
 		return nil, errors.NewUserError("I couldn't find any actions that are enabled, however, " +
-			"I'm experiencing some technical difficulties, so I might be wrong. Try again in a bit.")
+			"I'm experiencing some technical difficulties so I might be wrong. Try again in a bit.")
 	}
 
 	if listBuilder.Len() == 0 {
