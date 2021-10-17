@@ -28,7 +28,7 @@ func New(actions ...action.Action) *Enable {
 			Name:             "enable",
 			Aliases:          []string{"off"},
 			ShortDescription: "Enable an action in the calling channel.",
-			ChannelTypes:     plugin.GuildTextChannels,
+			ChannelTypes:     plugin.GuildTextChannels | plugin.GuildNewsChannels,
 			BotPermissions:   discord.PermissionSendMessages,
 			Restrictions:     restriction.UserPermissions(discord.PermissionManageChannels),
 		},
@@ -37,21 +37,42 @@ func New(actions ...action.Action) *Enable {
 }
 
 func (e *Enable) Invoke(s *state.State, ctx *plugin.Context) (interface{}, error) {
-	var selectedAction action.Action
+	selectedAction, err := e.selectAction(s, ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	if err = e.ensureChannelTypes(ctx, selectedAction); err != nil {
+		return nil, err
+	}
+
+	return nil, selectedAction.Enable(ctx)
+}
+
+func (e *Enable) selectAction(s *state.State, ctx *plugin.Context) (action.Action, error) {
+	var selectedAction action.Action
 	actionSelect := msgbuilder.NewSelect(&selectedAction)
 
 	for _, selectableAction := range e.actions {
-		actionSelect.With(msgbuilder.NewSelectOption(selectableAction.Name(), selectableAction))
+		actionSelect.With(msgbuilder.NewSelectOption(selectableAction.GetName(), selectableAction))
 	}
 
 	_, err := msgbuilder.New(s, ctx).
 		WithContent("Please select the action you would like to enable.").
 		WithAwaitedComponent(actionSelect).
 		ReplyAndAwait(15 * time.Second)
+	return selectedAction, err
+}
+
+func (e *Enable) ensureChannelTypes(ctx *plugin.Context, selectedAction action.Action) error {
+	c, err := ctx.Channel()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, selectedAction.Enable(ctx)
+	if !selectedAction.GetChannelTypes().Has(c.Type) {
+		return plugin.NewChannelTypeError(selectedAction.GetChannelTypes())
+	}
+
+	return nil
 }

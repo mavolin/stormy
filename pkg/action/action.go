@@ -9,15 +9,20 @@ import (
 
 // Action is the abstraction of an action, as used by the action plugin.
 type Action interface {
-	// Name returns the name of the action.
-	Name() string
+	// GetName returns the name of the action.
+	GetName() string
 
 	// IsSingleInstance reports whether the Action is designed to only run a
 	// single instance per channel.
 	IsSingleInstance() bool
-	// InstanceNames returns the names of the instances running in the channel
-	// with the passed id, or nil if the command is disabled.
-	InstanceNames(channelID discord.ChannelID) ([]string, error)
+	// GetInstanceNames returns the names of the instances running in the
+	// channel with the passed id, or nil if the command is disabled.
+	GetInstanceNames(channelID discord.ChannelID) ([]string, error)
+
+	// GetChannelTypes returns the channel types the action works in.
+	// The ChannelTypes must be either plugin.GuildTextChannels,
+	// plugin.GuildNewsChannels, or both.
+	GetChannelTypes() plugin.ChannelTypes
 
 	// Enable enables the action in the invoking channel.
 	//
@@ -32,6 +37,18 @@ type Action interface {
 	// If the action is already disabled, a *AlreadyDisabledError is returned.
 	Disable(ctx *plugin.Context) error
 }
+
+// ActionMeta is an embeddable struct that can be used to provide the metadata
+// getters of an Action.
+type ActionMeta struct {
+	Name           string
+	SingleInstance bool
+	ChannelTypes   plugin.ChannelTypes
+}
+
+func (m ActionMeta) GetName() string                      { return m.Name }
+func (m ActionMeta) IsSingleInstance() bool               { return m.SingleInstance }
+func (m ActionMeta) GetChannelTypes() plugin.ChannelTypes { return m.ChannelTypes }
 
 // OnceCommander is an interface that can optionally be implemented by actions
 // if they support running the action once.

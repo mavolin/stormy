@@ -22,7 +22,7 @@ func New(actions ...action.Action) *module.Module {
 
 	for _, a := range actions {
 		if oc, ok := a.(action.OnceCommander); ok {
-			mod.AddCommand(&onceCommand{name: a.Name(), OnceCommand: oc.OnceCommand()})
+			mod.AddCommand(&onceCommand{name: a.GetName(), OnceCommand: oc.OnceCommand()})
 		}
 	}
 

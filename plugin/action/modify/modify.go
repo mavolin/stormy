@@ -36,11 +36,10 @@ func New(actions ...action.Action) *Modify {
 
 func (e *Modify) Invoke(s *state.State, ctx *plugin.Context) (interface{}, error) {
 	var selectedAction action.Action
-
 	actionSelect := msgbuilder.NewSelect(&selectedAction)
 
 	for _, selectableAction := range e.actions {
-		actionSelect.With(msgbuilder.NewSelectOption(selectableAction.Name(), selectableAction))
+		actionSelect.With(msgbuilder.NewSelectOption(selectableAction.GetName(), selectableAction))
 	}
 
 	_, err := msgbuilder.New(s, ctx).
@@ -49,6 +48,15 @@ func (e *Modify) Invoke(s *state.State, ctx *plugin.Context) (interface{}, error
 		ReplyAndAwait(15 * time.Second)
 	if err != nil {
 		return nil, err
+	}
+
+	c, err := ctx.Channel()
+	if err != nil {
+		return nil, err
+	}
+
+	if !selectedAction.GetChannelTypes().Has(c.Type) {
+		return nil, plugin.NewChannelTypeError(selectedAction.GetChannelTypes())
 	}
 
 	return nil, selectedAction.Modify(ctx)

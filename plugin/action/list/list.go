@@ -4,14 +4,13 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/impl/command"
 	"github.com/mavolin/adam/pkg/impl/restriction"
 	"github.com/mavolin/adam/pkg/plugin"
 	"github.com/mavolin/adam/pkg/utils/msgbuilder"
 	"github.com/mavolin/disstate/v4/pkg/state"
 
-	"github.com/mavolin/stormy/internal/common"
+	"github.com/mavolin/stormy/internal/stdcolor"
 	"github.com/mavolin/stormy/pkg/action"
 )
 
@@ -28,8 +27,8 @@ func New(actions ...action.Action) *List {
 		Meta: command.Meta{
 			Name:             "list",
 			Aliases:          []string{"ls"},
-			ShortDescription: "List all of the actions enabled in this channel.",
-			ChannelTypes:     plugin.GuildTextChannels,
+			ShortDescription: "List all enabled and all available actions in this channel.",
+			ChannelTypes:     plugin.GuildTextChannels | plugin.GuildNewsChannels,
 			BotPermissions:   discord.PermissionSendMessages,
 			Restrictions:     restriction.UserPermissions(discord.PermissionManageChannels),
 		},
@@ -38,64 +37,67 @@ func New(actions ...action.Action) *List {
 }
 
 func (l *List) Invoke(_ *state.State, ctx *plugin.Context) (interface{}, error) {
+	var enabledBuilder, disabledBuilder strings.Builder
+	enabledBuilder.Grow(2048) // size of an embed field
+	disabledBuilder.Grow(2048)
+
 	var errOccurred bool
 
-	var listBuilder strings.Builder
-	listBuilder.Grow(2048) // size of an embed description
-
 	for _, a := range l.actions {
-		instances, err := a.InstanceNames(ctx.ChannelID)
+		instances, err := a.GetInstanceNames(ctx.ChannelID)
 		if err != nil {
-			errOccurred = true
 			ctx.HandleErrorSilently(err)
-		}
-
-		if instances == nil {
+			errOccurred = true
 			continue
 		}
 
-		if listBuilder.Len() > 0 {
-			listBuilder.WriteRune('\n')
+		if instances == nil {
+			writeListItem(&disabledBuilder, a.GetName())
+			continue
 		}
 
-		listBuilder.WriteString("• ")
-		listBuilder.WriteString(a.Name())
+		writeListItem(&enabledBuilder, a.GetName())
 
 		if a.IsSingleInstance() {
 			continue
 		}
 
 		for _, name := range instances {
-			listBuilder.WriteRune('\n')
+			enabledBuilder.WriteRune('\n')
 
 			// use an ideographic space for indention, as Discord strips
 			// regular whitespace
-			listBuilder.WriteString("\u3000\u3000‣ ")
-			listBuilder.WriteString(name)
+			enabledBuilder.WriteString("\u3000\u3000‣ ")
+			enabledBuilder.WriteString(name)
 		}
 	}
 
-	if listBuilder.Len() == 0 && errOccurred {
-		return nil, errors.NewUserError("I couldn't find any actions that are enabled, however, " +
-			"I'm experiencing some technical difficulties so I might be wrong. Try again in a bit.")
-	}
-
-	if listBuilder.Len() == 0 {
-		return "No actions are enabled in this channel.", nil
-	}
-
+	desc := "Below is a list of all enabled and all disabled actions in this channel."
 	if errOccurred {
-		return msgbuilder.NewEmbed().
-			WithTitle("Enabled Actions").
-			WithDescription("The following actions are enabled in this channel."+
-				"This list might be incomplete, as I'm currently experiencing some problems.").
-			WithColor(common.EnabledColor).
-			WithField("Actions", listBuilder.String()), nil
+		desc += " However, this list is incomplete, as I'm currently experiencing some technical difficulties."
 	}
 
-	return msgbuilder.NewEmbed().
-		WithTitle("Enabled Actions").
-		WithDescription("The following actions are enabled in this channel.").
-		WithColor(common.EnabledColor).
-		WithField("Actions", listBuilder.String()), nil
+	resp := msgbuilder.NewEmbed().
+		WithTitle("Actions").
+		WithDescription(desc).
+		WithColor(stdcolor.Default)
+
+	if enabledBuilder.Len() > 0 {
+		resp.WithField("Enabled Actions", enabledBuilder.String())
+	}
+
+	if disabledBuilder.Len() > 0 {
+		resp.WithField("Disabled Actions", disabledBuilder.String())
+	}
+
+	return resp, nil
+}
+
+func writeListItem(b *strings.Builder, item string) {
+	if b.Len() > 0 {
+		b.WriteRune('\n')
+	}
+
+	b.WriteString("• ")
+	b.WriteString(item)
 }
