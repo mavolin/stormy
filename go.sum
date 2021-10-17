@@ -98,6 +98,10 @@ github.com/mattn/goveralls v0.0.2/go.mod h1:8d1ZMHsd7fW6IRPKQh46F2WRpyib5/X4FOpe
 github.com/mavolin/adam v0.0.0-20210919141810-fa3ad1b33839/go.mod h1:1Q7TsqsR9NH5+nYl2WIsa2zMkQJae20PDx/nM8P0viY=
 github.com/mavolin/adam v0.0.0-20211009125101-486e446438ec h1:yBTjU3x5rP9go7hnVdbWwnZt8BqGTmCnCigLYSOSFcs=
 github.com/mavolin/adam v0.0.0-20211009125101-486e446438ec/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211017142347-f906228768e9 h1:mDsBb0U9SRi2DUQ8e4JHIKZ0t86fRhEltBYR++iXyyk=
+github.com/mavolin/adam v0.0.0-20211017142347-f906228768e9/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211017144653-0972c0b4a5da h1:4qLqa+croLlWk8mDk/6hWC3XqFp1l+p5gEq5kDxJkgE=
+github.com/mavolin/adam v0.0.0-20211017144653-0972c0b4a5da/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
 github.com/mavolin/dismock/v3 v3.0.0-20210822164257-794460070846/go.mod h1:rPxTF3Pa8/yLg2UZw0sOetOK/DqR+eTanE16CxOM5e0=
 github.com/mavolin/dismock/v3 v3.0.0-20210831142601-d09b1b87b784 h1:Ijnhxk9myWL931zjPaRKW460ZNbKnMQknZE/cf1dy6o=
 github.com/mavolin/dismock/v3 v3.0.0-20210831142601-d09b1b87b784/go.mod h1:yUU2WJu761Jvr5uRuFrJEVdxLFag9ZP536qXopL1jy4=
