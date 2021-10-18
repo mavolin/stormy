@@ -27,15 +27,17 @@ func Get(ctx *plugin.Context) *zap.SugaredLogger {
 func NewMiddleware(l *zap.SugaredLogger) bot.Middleware {
 	return func(next bot.CommandFunc) bot.CommandFunc {
 		return func(s *state.State, ctx *plugin.Context) error {
-			l := l.Named("cmd:"+ctx.InvokedCommand.SourceName()+"/"+string(ctx.InvokedCommand.ID()[1:])).
-				With(
-					"guild_id", ctx.GuildID,
-					"channel_id", ctx.ChannelID,
-					"message_id", ctx.Message.ID,
-					"author_id", ctx.Author.ID,
-				)
-			l.Info(ctx.InvokedCommand.ID(), " was invoked")
-			ctx.Set(key{}, l)
+			l := l.With(
+				"source", ctx.InvokedCommand.SourceName(),
+				"command_id", ctx.InvokedCommand.ID(),
+				"guild_id", ctx.GuildID,
+				"channel_id", ctx.ChannelID,
+				"message_id", ctx.Message.ID,
+				"author_id", ctx.Author.ID,
+			)
+			l.Named("router").Info("command was invoked")
+
+			ctx.Set(key{}, l.Named("cmd:"+ctx.InvokedCommand.SourceName()+"/"+string(ctx.InvokedCommand.ID()[1:])))
 
 			return next(s, ctx)
 		}
@@ -47,7 +49,7 @@ func NewMiddleware(l *zap.SugaredLogger) bot.Middleware {
 func NewFallbackMiddleware(l *zap.SugaredLogger) bot.Middleware {
 	return func(next bot.CommandFunc) bot.CommandFunc {
 		return func(s *state.State, ctx *plugin.Context) error {
-			l := l.With(
+			l := l.Named("router").With(
 				"guild_id", ctx.GuildID,
 				"channel_id", ctx.ChannelID,
 				"message_id", ctx.Message.ID,

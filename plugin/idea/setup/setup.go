@@ -120,7 +120,7 @@ func (setup *Setup) Invoke(s *state.State, ctx *plugin.Context) (interface{}, er
 		return setup.firstTimeSetup(s, ctx)
 	}
 
-	return setup.modifySetup(s, ctx, ChannelSettings{})
+	return setup.modifySetup(s, ctx, *settings)
 }
 
 func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interface{}, error) {
@@ -136,6 +136,13 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 		w.AddStep(thumbnailStep(&set.Thumbnail))
 
 		if err := w.Start(); err != nil {
+			if errors.Is(err, errors.Abort) {
+				return msgbuilder.NewEmbed().
+					WithTitle("Cancel").
+					WithColor(stdcolor.Yellow).
+					WithDescription("The setup has been cancelled."), nil
+			}
+
 			return nil, err
 		}
 	} else {
@@ -146,6 +153,12 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 			Color:        morearg.FlagOrDefault(ctx, "color", stdcolor.Default).(discord.Color),
 			Thumbnail:    ctx.Flags.String("thumbnail"),
 		}
+	}
+
+	err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, set)
+	if err != nil {
+		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save the settings you choose. "+
+			"Try again in a bit.")
 	}
 
 	return msgbuilder.NewEmbed().
@@ -212,63 +225,40 @@ func (setup *Setup) modifySetup(
 	return msgbuilder.NewEmbed().
 		WithTitle("Changes saved").
 		WithColor(stdcolor.Green).
-		WithDescription("I've save your changes."), nil
-}
-
-func (setup *Setup) modifyChangeList(oldS, newS ChannelSettings) *msgbuilder.EmbedBuilder {
-	embed := msgbuilder.NewEmbed().
-		WithTitle("Proceed?").
-		WithColor(stdcolor.Default).
-		WithDescription("You are about to change the following settings. Do you wish to proceed?")
-
-	if oldS.VoteType != newS.VoteType {
-		embed.WithInlinedField("Vote Type", fmt.Sprintf("`%s` ➡ `%s`", oldS.VoteType, newS.VoteType))
-	}
-
-	if oldS.VoteDuration != newS.VoteDuration {
-		embed.WithInlinedField("Vote Duration",
-			fmt.Sprintf("`%s` ➡ `%s`", duration.Format(oldS.VoteDuration), duration.Format(newS.VoteDuration)))
-	}
-
-	if oldS.Anonymous != newS.Anonymous {
-		embed.WithInlinedField("Anonymous", fmt.Sprintf("`%t` ➡ `%t`", oldS.Anonymous, newS.Anonymous))
-	}
-
-	if oldS.Color != newS.Color {
-		embed.WithInlinedField("Color", fmt.Sprintf("`%06x` ➡ `%06x`", oldS.Color, newS.Color))
-	}
-
-	if oldS.Thumbnail != newS.Thumbnail {
-		embed.WithInlinedField("Thumbnail", "changed")
-	}
-
-	return embed
+		WithDescription("I've saved your changes."), nil
 }
 
 func (setup *Setup) modifySetupInteractive(
 	s *state.State, ctx *plugin.Context, set ChannelSettings,
 ) (ChannelSettings, error) {
 	var steps []wizard.Step
+	var done bool
 
 	_, err := msgbuilder.New(s, ctx).
 		WithEmbed(msgbuilder.NewEmbed().
 			WithTitle("What do you want to change?").
 			WithColor(stdcolor.Default).
 			WithDescription("Please select the settings you want to change in this channel.")).
-		WithAwaitedComponent(msgbuilder.NewSelect(&steps).
+		WithComponent(msgbuilder.NewSelect(&steps).
 			WithBounds(1, 5).
 			With(msgbuilder.NewSelectOption("Vote Type", voteTypeStep(&set.VoteType))).
 			With(msgbuilder.NewSelectOption("Vote Duration", voteDurationStep(&set.VoteDuration))).
 			With(msgbuilder.NewSelectOption("Anonymity", anonymousStep(&set.Anonymous))).
 			With(msgbuilder.NewSelectOption("Color", colorStep(&set.Color))).
 			With(msgbuilder.NewSelectOption("Thumbnail", thumbnailStep(&set.Thumbnail)))).
+		WithAwaitedComponent(msgbuilder.NewActionRow(&done).
+			With(msgbuilder.NewButton(discord.SuccessButton, "Done", true)).
+			With(msgbuilder.NewButton(discord.DangerButton, "Cancel", false))).
 		ReplyAndAwait(30 * time.Second)
 	if err != nil {
 		return ChannelSettings{}, err
 	}
 
-	w := wizard.New(s, ctx)
+	if !done {
+		return ChannelSettings{}, errors.Abort
+	}
 
+	w := wizard.New(s, ctx)
 	for _, s := range steps {
 		w.AddStep(s)
 	}
@@ -300,4 +290,53 @@ func (setup *Setup) modifySetupFlags(ctx *plugin.Context, set ChannelSettings) C
 	}
 
 	return set
+}
+
+func (setup *Setup) modifyChangeList(oldS, newS ChannelSettings) *msgbuilder.EmbedBuilder {
+	embed := msgbuilder.NewEmbed().
+		WithTitle("Everything in Order?").
+		WithColor(stdcolor.Default).
+		WithDescription("You are about to change the following settings. Do you wish to proceed?")
+
+	if oldS.VoteType != newS.VoteType {
+		embed.WithInlinedField("Vote Type", fmt.Sprintf("`%s` ➡ `%s`", oldS.VoteType, newS.VoteType))
+	}
+
+	if oldS.VoteDuration != newS.VoteDuration {
+		oldDuration := "forever"
+		if oldS.VoteDuration > 0 {
+			oldDuration = duration.Format(oldS.VoteDuration)
+		}
+
+		newDuration := "forever"
+		if newS.VoteDuration > 0 {
+			newDuration = duration.Format(newS.VoteDuration)
+		}
+
+		embed.WithInlinedField("Vote Duration", fmt.Sprintf("`%s` ➡ `%s`", oldDuration, newDuration))
+	}
+
+	if oldS.Anonymous != newS.Anonymous {
+		oldAnonymous := "anonymous"
+		if !oldS.Anonymous {
+			oldAnonymous = "public"
+		}
+
+		newAnonymous := "anonymous"
+		if !newS.Anonymous {
+			newAnonymous = "public"
+		}
+
+		embed.WithInlinedField("Anonymous", fmt.Sprintf("`%s` ➡ `%s`", oldAnonymous, newAnonymous))
+	}
+
+	if oldS.Color != newS.Color {
+		embed.WithInlinedField("Color", fmt.Sprintf("`%06x` ➡ `%06x`", oldS.Color, newS.Color))
+	}
+
+	if oldS.Thumbnail != newS.Thumbnail {
+		embed.WithInlinedField("Thumbnail", "*changed*")
+	}
+
+	return embed
 }

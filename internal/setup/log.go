@@ -62,13 +62,11 @@ func newConsoleEncoder() zapcore.Encoder {
 		LevelKey:       ".",
 		TimeKey:        ".",
 		NameKey:        ".",
-		CallerKey:      ".",
 		FunctionKey:    ".",
 		LineEnding:     zapcore.DefaultLineEnding,
 		EncodeLevel:    zapcore.LowercaseColorLevelEncoder,
 		EncodeTime:     zapcore.RFC3339TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
 	})
 }
 
@@ -84,6 +82,6 @@ func newJSONEncoder() zapcore.Encoder {
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.RFC3339TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		EncodeCaller:   zapcore.FullCallerEncoder,
 	})
 }

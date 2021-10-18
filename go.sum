@@ -110,6 +110,8 @@ github.com/mavolin/adam v0.0.0-20211017173235-800e6d5a667c h1:wiCkuoY3Y1BAUmcXTe
 github.com/mavolin/adam v0.0.0-20211017173235-800e6d5a667c/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
 github.com/mavolin/adam v0.0.0-20211018120027-18cc91167f31 h1:9bdEJvycKt1rpqwcIAltW/CUKwcO5fOTnqkOggwhawM=
 github.com/mavolin/adam v0.0.0-20211018120027-18cc91167f31/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211018160626-829a84f23bc7 h1:EgLiazmi9/vx4nyPH7zR6RnC/pUoc64CqYYQWhGPeAE=
+github.com/mavolin/adam v0.0.0-20211018160626-829a84f23bc7/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
 github.com/mavolin/dismock/v3 v3.0.0-20210822164257-794460070846/go.mod h1:rPxTF3Pa8/yLg2UZw0sOetOK/DqR+eTanE16CxOM5e0=
 github.com/mavolin/dismock/v3 v3.0.0-20210831142601-d09b1b87b784 h1:Ijnhxk9myWL931zjPaRKW460ZNbKnMQknZE/cf1dy6o=
 github.com/mavolin/dismock/v3 v3.0.0-20210831142601-d09b1b87b784/go.mod h1:yUU2WJu761Jvr5uRuFrJEVdxLFag9ZP536qXopL1jy4=
