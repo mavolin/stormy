@@ -15,9 +15,9 @@ import (
 	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
 
+	"github.com/mavolin/stormy/internal/config"
 	"github.com/mavolin/stormy/internal/errhandler"
 	"github.com/mavolin/stormy/internal/setup"
-	"github.com/mavolin/stormy/internal/setup/config"
 	"github.com/mavolin/stormy/internal/zapadam"
 	"github.com/mavolin/stormy/internal/zapstate"
 	"github.com/mavolin/stormy/pkg/repository"
@@ -76,7 +76,9 @@ func run(l *zap.SugaredLogger) error {
 	b.State.AddMiddleware(zapstate.NewMiddleware(l))
 
 	addMiddlewares(b, l, hub)
-	addPlugins(b)
+
+	repo := setup.Repository(setup.RepositoryOptions{})
+	addPlugins(b, repo)
 
 	b.AddIntents(b.State.DeriveIntents())
 	b.AddIntents(gateway.IntentGuildMessageTyping)
