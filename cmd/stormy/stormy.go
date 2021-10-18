@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/getsentry/sentry-go"
 	"github.com/mavolin/adam/pkg/bot"
 	"github.com/mavolin/adam/pkg/impl/command/help"
@@ -19,9 +20,8 @@ import (
 	"github.com/mavolin/stormy/internal/setup/config"
 	"github.com/mavolin/stormy/internal/zapadam"
 	"github.com/mavolin/stormy/internal/zapstate"
-	"github.com/mavolin/stormy/pkg/action"
-	actionmod "github.com/mavolin/stormy/plugin/action"
-	"github.com/mavolin/stormy/plugin/do"
+	"github.com/mavolin/stormy/pkg/repository"
+	"github.com/mavolin/stormy/plugin/idea"
 )
 
 var debug = flag.Bool("debug", false, "whether to run in debug mode")
@@ -78,6 +78,9 @@ func run(l *zap.SugaredLogger) error {
 	addMiddlewares(b, l, hub)
 	addPlugins(b)
 
+	b.AddIntents(b.State.DeriveIntents())
+	b.AddIntents(gateway.IntentGuildMessageTyping)
+
 	l.Info("starting bot")
 	if err = b.Open(4 * time.Second); err != nil {
 		return err
@@ -87,7 +90,7 @@ func run(l *zap.SugaredLogger) error {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	recSig := <-sig
 
-	l.Info("received %s, shutting down", recSig)
+	l.Infof("received %s, shutting down", recSig)
 
 	return b.State.Close()
 }
@@ -115,9 +118,8 @@ func addMiddlewares(b *bot.Bot, l *zap.SugaredLogger, hub *sentry.Hub) {
 	b.AddPostMiddleware(bot.InvokeCommand)
 }
 
-func addPlugins(b *bot.Bot, actions ...action.Action) {
+func addPlugins(b *bot.Bot, r repository.Repository) {
 	b.AddCommand(help.New(help.Options{}))
 
-	b.AddModule(actionmod.New(actions...))
-	b.AddModule(do.New(actions...))
+	b.AddModule(idea.New(r))
 }

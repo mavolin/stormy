@@ -24,10 +24,10 @@ func voteTypeStep(typ *VoteType) wizard.Step {
 					WithColor(stdcolor.Default).
 					WithDescription("What type of scale should be used to vote?")).
 				WithComponent(msgbuilder.NewSelect(typ).
-					WithDefault(msgbuilder.NewSelectOption("👍️, and 👎️", Thumbs)).
-					With(msgbuilder.NewSelectOption("😀 and ☹️", TwoEmojis)).
-					With(msgbuilder.NewSelectOption("😀, 😐️, and ☹️", ThreeEmojis)).
-					With(msgbuilder.NewSelectOption("😀, 🙂, 😐️, 🙁, and ☹️", FiveEmojis))).
+					WithDefault(msgbuilder.NewSelectOption("👍, and 👎", Thumbs)).
+					With(msgbuilder.NewSelectOption("😀 and ☹", TwoEmojis)).
+					With(msgbuilder.NewSelectOption("😀, 😐, and ☹", ThreeEmojis)).
+					With(msgbuilder.NewSelectOption("😀, 🙂, 😐, 🙁, and ☹", FiveEmojis))).
 				WithAwaitedComponent(msgbuilder.NewActionRow(new(struct{})).
 					With(msgbuilder.NewButton(discord.SuccessButton, "Done", struct{}{})))
 		},
@@ -37,6 +37,7 @@ func voteTypeStep(typ *VoteType) wizard.Step {
 
 func voteDurationStep(voteDuration *time.Duration) wizard.Step {
 	var voteDurationMsg discord.Message
+	var forever bool
 
 	return wizard.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
@@ -47,13 +48,14 @@ func voteDurationStep(voteDuration *time.Duration) wizard.Step {
 					WithDescription("How long should users be able to vote on an idea?\n"+
 						"Type a duration like `24h` or `1d 12h` or click the `Forever` button.")).
 				WithAwaitedResponse(&voteDurationMsg, 20*time.Second, 10*time.Second).
-				WithAwaitedComponent(msgbuilder.NewActionRow(voteDuration).
-					With(msgbuilder.NewButton(discord.PrimaryButton, "Forever", time.Duration(-1)).
-						WithEmoji(discord.ButtonEmoji{Name: "♾️"})))
+				WithAwaitedComponent(msgbuilder.NewActionRow(&forever).
+					With(msgbuilder.NewButton(discord.PrimaryButton, "Forever", true).
+						WithEmoji(discord.ButtonEmoji{Name: "♾"})))
 		},
 		WaitFor: 30 * time.Second,
 		Validator: func(s *state.State, ctx *plugin.Context) (err error) {
-			if *voteDuration == -1 {
+			if forever {
+				*voteDuration = 0
 				return nil
 			}
 
@@ -78,7 +80,7 @@ func anonymousStep(anonymous *bool) wizard.Step {
 						"If not their username and profile picture at that time will be included in the post.")).
 				WithAwaitedComponent(msgbuilder.NewActionRow(anonymous).
 					With(msgbuilder.NewButton(discord.PrimaryButton, "Anonymous", true).
-						WithEmoji(discord.ButtonEmoji{Name: "🕵️"})).
+						WithEmoji(discord.ButtonEmoji{Name: "🕵"})).
 					With(msgbuilder.NewButton(discord.PrimaryButton, "Public", false).
 						WithEmoji(discord.ButtonEmoji{Name: "🌐"})))
 		},
