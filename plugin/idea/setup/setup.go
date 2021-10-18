@@ -155,7 +155,7 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 		}
 	}
 
-	err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, set)
+	err := setup.repo.IdeaSetChannelSettings(ctx.ChannelID, set)
 	if err != nil {
 		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save the settings you choose. "+
 			"Try again in a bit.")
@@ -217,7 +217,7 @@ func (setup *Setup) modifySetup(
 			WithDescription("I've discarded the changes you made. Everything remains as is."), nil
 	}
 
-	if err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, newSettings); err != nil {
+	if err := setup.repo.IdeaSetChannelSettings(ctx.ChannelID, newSettings); err != nil {
 		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save your changes. "+
 			"Try again in a bit.")
 	}

@@ -9,7 +9,7 @@ import (
 
 type Repository interface {
 	IdeaChannelSettings(discord.ChannelID) (*ChannelSettings, error)
-	SetIdeaChannelSettings(discord.ChannelID, ChannelSettings) error
+	IdeaSetChannelSettings(discord.ChannelID, ChannelSettings) error
 }
 
 type ChannelSettings struct {

@@ -2,8 +2,10 @@ package setup
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/mavolin/stormy/pkg/repository"
+	"github.com/mavolin/stormy/pkg/repository/logwrap"
 	"github.com/mavolin/stormy/pkg/repository/memory"
 )
 
@@ -12,7 +14,13 @@ type RepositoryOptions struct {
 }
 
 func Repository(o RepositoryOptions) repository.Repository {
-	logger := o.Logger.Named("repository")
+	return logWrap(memory.New(), o.Logger.Named("repository"))
+}
 
-	return memory.New(logger)
+func logWrap(r repository.Repository, l *zap.SugaredLogger) repository.Repository {
+	if !l.Desugar().Core().Enabled(zapcore.DebugLevel) {
+		return r
+	}
+
+	return logwrap.Wrap(r, l)
 }
