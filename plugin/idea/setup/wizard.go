@@ -12,15 +12,15 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/state"
 
 	"github.com/mavolin/stormy/internal/stdcolor"
-	"github.com/mavolin/stormy/internal/wizard"
+	wizard2 "github.com/mavolin/stormy/internal/utils/wizard"
 )
 
-func voteTypeStep(typ *VoteType) wizard.Step {
-	return wizard.Step{
+func voteTypeStep(typ *VoteType) wizard2.Step {
+	return wizard2.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
 			return msgbuilder.New(s, ctx).
 				WithEmbed(msgbuilder.NewEmbed().
-					WithTitle(wizard.Title(ctx, "Type of Vote")).
+					WithTitle(wizard2.Title(ctx, "Type of Vote")).
 					WithColor(stdcolor.Default).
 					WithDescription("What type of scale should be used to vote?")).
 				WithComponent(msgbuilder.NewSelect(typ).
@@ -35,15 +35,15 @@ func voteTypeStep(typ *VoteType) wizard.Step {
 	}
 }
 
-func voteDurationStep(voteDuration *time.Duration) wizard.Step {
+func voteDurationStep(voteDuration *time.Duration) wizard2.Step {
 	var voteDurationMsg discord.Message
 	var forever bool
 
-	return wizard.Step{
+	return wizard2.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
 			return msgbuilder.New(s, ctx).
 				WithEmbed(msgbuilder.NewEmbed().
-					WithTitle(wizard.Title(ctx, "Vote Duration")).
+					WithTitle(wizard2.Title(ctx, "Vote Duration")).
 					WithColor(stdcolor.Default).
 					WithDescription("How long should users be able to vote on an idea?\n"+
 						"Type a duration like `24h` or `1d 12h` or click the `Forever` button.")).
@@ -61,7 +61,7 @@ func voteDurationStep(voteDuration *time.Duration) wizard.Step {
 
 			*voteDuration, err = duration.Parse(voteDurationMsg.Content)
 			if err != nil || *voteDuration <= 0 {
-				return wizard.NewRetryErrorf("`%s` is not a valid duration.", voteDurationMsg.Content)
+				return wizard2.NewRetryErrorf("`%s` is not a valid duration.", voteDurationMsg.Content)
 			}
 
 			return nil
@@ -69,12 +69,12 @@ func voteDurationStep(voteDuration *time.Duration) wizard.Step {
 	}
 }
 
-func anonymousStep(anonymous *bool) wizard.Step {
-	return wizard.Step{
+func anonymousStep(anonymous *bool) wizard2.Step {
+	return wizard2.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
 			return msgbuilder.New(s, ctx).
 				WithEmbed(msgbuilder.NewEmbed().
-					WithTitle(wizard.Title(ctx, "Anonymous")).
+					WithTitle(wizard2.Title(ctx, "Anonymous")).
 					WithColor(stdcolor.Default).
 					WithDescription("Shall the author of the idea remain anonymous?\n" +
 						"If not their username and profile picture at that time will be included in the post.")).
@@ -88,14 +88,14 @@ func anonymousStep(anonymous *bool) wizard.Step {
 	}
 }
 
-func colorStep(color *discord.Color) wizard.Step {
+func colorStep(color *discord.Color) wizard2.Step {
 	var colorMsg discord.Message
 
-	return wizard.Step{
+	return wizard2.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
 			return msgbuilder.New(s, ctx).
 				WithEmbed(msgbuilder.NewEmbed().
-					WithTitle(wizard.Title(ctx, "Color")).
+					WithTitle(wizard2.Title(ctx, "Color")).
 					WithColor(stdcolor.Default).
 					WithDescription("What color (the line at the left) shall the idea have, when posted?\n"+
 						"Respond with a hexadecimal color such as `44c5f3`.")).
@@ -111,7 +111,7 @@ func colorStep(color *discord.Color) wizard.Step {
 
 			cInt, err := strconv.ParseInt(colorMsg.Content, 16, 32)
 			if err != nil || len(colorMsg.Content) != 6 || cInt < 0x000000 || cInt > 0xffffff {
-				return wizard.NewRetryErrorf("`%s` is not a valid color.", colorMsg.Content)
+				return wizard2.NewRetryErrorf("`%s` is not a valid color.", colorMsg.Content)
 			}
 
 			return nil
@@ -119,15 +119,15 @@ func colorStep(color *discord.Color) wizard.Step {
 	}
 }
 
-func thumbnailStep(thumbnailURL *discord.URL) wizard.Step {
+func thumbnailStep(thumbnailURL *discord.URL) wizard2.Step {
 	var thumbnailMsg discord.Message
 	var none bool
 
-	return wizard.Step{
+	return wizard2.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
 			return msgbuilder.New(s, ctx).
 				WithEmbed(msgbuilder.NewEmbed().
-					WithTitle(wizard.Title(ctx, "Thumbnail")).
+					WithTitle(wizard2.Title(ctx, "Thumbnail")).
 					WithColor(stdcolor.Default).
 					WithDescription("What thumbnail (little picture on the top right) should each post contain?\n"+
 						"Please upload an image, send a link, or click `None`.")).
@@ -148,7 +148,7 @@ func thumbnailStep(thumbnailURL *discord.URL) wizard.Step {
 
 			_, err := url.ParseRequestURI(thumbnailMsg.Content)
 			if err != nil {
-				return wizard.NewRetryError("The link you gave me is invalid.")
+				return wizard2.NewRetryError("The link you gave me is invalid.")
 			}
 
 			*thumbnailURL = thumbnailMsg.Content

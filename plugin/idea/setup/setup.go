@@ -17,10 +17,10 @@ import (
 	"github.com/mavolin/adam/pkg/utils/msgbuilder"
 	"github.com/mavolin/disstate/v4/pkg/state"
 
-	"github.com/mavolin/stormy/internal/deleteall"
 	"github.com/mavolin/stormy/internal/morearg"
 	"github.com/mavolin/stormy/internal/stdcolor"
-	"github.com/mavolin/stormy/internal/wizard"
+	"github.com/mavolin/stormy/internal/utils/deleteall"
+	"github.com/mavolin/stormy/internal/utils/wizard"
 )
 
 type Setup struct {
