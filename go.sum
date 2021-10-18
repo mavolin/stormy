@@ -102,6 +102,14 @@ github.com/mavolin/adam v0.0.0-20211017142347-f906228768e9 h1:mDsBb0U9SRi2DUQ8e4
 github.com/mavolin/adam v0.0.0-20211017142347-f906228768e9/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
 github.com/mavolin/adam v0.0.0-20211017144653-0972c0b4a5da h1:4qLqa+croLlWk8mDk/6hWC3XqFp1l+p5gEq5kDxJkgE=
 github.com/mavolin/adam v0.0.0-20211017144653-0972c0b4a5da/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211017160128-a4d5ef47096c h1:RIckFBd8yf5TF9Ufei4nBlo1NEikTM8kt/1fR5/dtQI=
+github.com/mavolin/adam v0.0.0-20211017160128-a4d5ef47096c/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211017170820-d1fba3084c57 h1:6d9SZ9y/2YACSa4qdyFIN7k66DiWeqObiFm0b+9t2Lk=
+github.com/mavolin/adam v0.0.0-20211017170820-d1fba3084c57/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211017173235-800e6d5a667c h1:wiCkuoY3Y1BAUmcXTeDbt/avKOVsukNclGzqr67MRIs=
+github.com/mavolin/adam v0.0.0-20211017173235-800e6d5a667c/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
+github.com/mavolin/adam v0.0.0-20211018120027-18cc91167f31 h1:9bdEJvycKt1rpqwcIAltW/CUKwcO5fOTnqkOggwhawM=
+github.com/mavolin/adam v0.0.0-20211018120027-18cc91167f31/go.mod h1:iVOTPHf+2TzgxV4Ez8kn1KrEbSV9t2+hnbn+SAxPCkc=
 github.com/mavolin/dismock/v3 v3.0.0-20210822164257-794460070846/go.mod h1:rPxTF3Pa8/yLg2UZw0sOetOK/DqR+eTanE16CxOM5e0=
 github.com/mavolin/dismock/v3 v3.0.0-20210831142601-d09b1b87b784 h1:Ijnhxk9myWL931zjPaRKW460ZNbKnMQknZE/cf1dy6o=
 github.com/mavolin/dismock/v3 v3.0.0-20210831142601-d09b1b87b784/go.mod h1:yUU2WJu761Jvr5uRuFrJEVdxLFag9ZP536qXopL1jy4=
