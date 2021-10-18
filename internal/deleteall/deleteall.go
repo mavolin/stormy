@@ -10,6 +10,7 @@ import (
 	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/impl/replier"
 	"github.com/mavolin/adam/pkg/plugin"
+	"github.com/mavolin/adam/pkg/utils/discorderr"
 	"github.com/mavolin/disstate/v4/pkg/event"
 	"github.com/mavolin/disstate/v4/pkg/state"
 )
@@ -34,8 +35,9 @@ func NewMiddleware(delay time.Duration) bot.Middleware {
 			t := replier.NewTracker(ctx.Replier)
 			ctx.Replier = t
 
-			if err := next(s, ctx); err != nil {
-				return err
+			nextErr := next(s, ctx)
+			if nextErr != nil && !errors.Is(nextErr, errors.Abort) {
+				return nextErr
 			}
 
 			rm()
@@ -54,7 +56,12 @@ func NewMiddleware(delay time.Duration) bot.Middleware {
 
 			ids = append(ids, userMsgIDs...)
 
-			return errors.WithStack(s.DeleteMessages(ctx.ChannelID, ids, ""))
+			err := s.DeleteMessages(ctx.ChannelID, ids, "")
+			if err != nil && !discorderr.Is(discorderr.As(err), discorderr.UnknownResource...) {
+				return errors.WithStack(err)
+			}
+
+			return nextErr // either nil or errors.Abort
 		}
 	}
 }
