@@ -12,6 +12,7 @@ import (
 	"github.com/mavolin/adam/pkg/impl/arg"
 	"github.com/mavolin/adam/pkg/impl/command"
 	"github.com/mavolin/adam/pkg/impl/restriction"
+	"github.com/mavolin/adam/pkg/impl/throttler"
 	"github.com/mavolin/adam/pkg/plugin"
 	"github.com/mavolin/adam/pkg/utils/duration"
 	"github.com/mavolin/adam/pkg/utils/msgbuilder"
@@ -105,6 +106,7 @@ func New(r Repository) *Setup {
 			ChannelTypes:   plugin.GuildTextChannels,
 			BotPermissions: discord.PermissionSendMessages,
 			Restrictions:   restriction.UserPermissions(discord.PermissionManageChannels),
+			Throttler:      throttler.PerChannel(1, 5*time.Second),
 		},
 		repo: r,
 	}
@@ -168,11 +170,7 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 		WithTitle("All Set!").
 		WithColor(stdcolor.Green).
 		WithDescription("Every message sent in this channel will be turned into an idea users can vote on, " +
-			"starting now.\n" +
-			"The first line of each message will be turned into the title of the idea. " +
-			"The remaining paragraphs are its description. Voting will stop after the voting duration has passed, " +
-			"and the results will be added to the idea. If you choose to never stop voting, obviously, " +
-			"no results will be posted. However, you can always have a look at the current voting."), nil
+			"starting now. If you need help with posting or formatting an idea, use `idea how`."), nil
 }
 
 func (setup *Setup) modifySetup(
