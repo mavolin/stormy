@@ -20,12 +20,6 @@ type ChannelSettings struct {
 	Thumbnail    string
 }
 
-func (c ChannelSettings) Equals(other ChannelSettings) bool {
-	return c.VoteType == other.VoteType && c.VoteDuration == other.VoteDuration &&
-		c.Anonymous == other.Anonymous && c.Color == other.Color &&
-		c.Thumbnail == other.Thumbnail
-}
-
 type VoteType uint8
 
 const (

@@ -194,7 +194,7 @@ func (setup *Setup) modifySetup(
 		newSettings = setup.modifySetupFlags(ctx, oldSettings)
 	}
 
-	if oldSettings.Equals(newSettings) {
+	if oldSettings == newSettings {
 		return msgbuilder.NewEmbed().
 			WithTitle("Nothing Changed").
 			WithColor(stdcolor.Yellow).
