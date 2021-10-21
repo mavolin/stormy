@@ -42,6 +42,8 @@ func run(l *zap.SugaredLogger) error {
 		return err
 	}
 
+	ml.With("data", c).Debug("config read")
+
 	hub, err := setup.Sentry(setup.SentryOptions{
 		DSN:              c.Sentry.DSN,
 		SampleRate:       c.Sentry.SampleRate,
@@ -76,7 +78,7 @@ func run(l *zap.SugaredLogger) error {
 
 	b.State.AddHandlerOnce(func(_ *state.State, e *event.Ready) {
 		ml.Infof("received first ready event, accepting commands as @%s#%s",
-			b.State.Ready().User.Username, b.State.Ready().User.Discriminator)
+			e.User.Username, e.User.Discriminator)
 	})
 
 	ml.Info("starting bot")
@@ -90,7 +92,7 @@ func run(l *zap.SugaredLogger) error {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	recSig := <-sig
 
-	l.Infof("received %s, closing all connections", recSig)
+	l.Infof("received %s, waiting for all commands to finish", recSig)
 	defer l.Info("done")
 
 	return b.State.Close()

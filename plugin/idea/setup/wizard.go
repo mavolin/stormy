@@ -12,7 +12,7 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/state"
 
 	"github.com/mavolin/stormy/internal/stdcolor"
-	"github.com/mavolin/stormy/internal/utils/wizard"
+	"github.com/mavolin/stormy/pkg/utils/wizard"
 )
 
 func voteTypeStep(typ *VoteType) wizard.Step {
@@ -46,7 +46,8 @@ func voteDurationStep(voteDuration *time.Duration) wizard.Step {
 					WithTitle(wizard.Title(ctx, "Vote Duration")).
 					WithColor(stdcolor.Default).
 					WithDescription("How long should users be able to vote on an idea?\n"+
-						"Type a duration like `24h` or `1d 12h` or click the `Forever` button.")).
+						"Type a duration like `24h` or `1d 12h` or click the `Forever` button. "+
+						"The duration must be at least one minute, and may be longer than a week.")).
 				WithAwaitedResponse(&voteDurationMsg, 20*time.Second, 10*time.Second).
 				WithAwaitedComponent(msgbuilder.NewActionRow(&forever).
 					With(msgbuilder.NewButton(discord.PrimaryButton, "Forever", true).
@@ -62,6 +63,10 @@ func voteDurationStep(voteDuration *time.Duration) wizard.Step {
 			*voteDuration, err = duration.Parse(voteDurationMsg.Content)
 			if err != nil || *voteDuration <= 0 {
 				return wizard.NewRetryErrorf("`%s` is not a valid duration.", voteDurationMsg.Content)
+			}
+
+			if *voteDuration < duration.Minute || *voteDuration > duration.Week {
+				return wizard.NewRetryError("The duration must be between one minute and one week.")
 			}
 
 			return nil

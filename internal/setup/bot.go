@@ -16,9 +16,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/mavolin/stormy/internal/zapadam"
-	"github.com/mavolin/stormy/internal/zapstate"
 	"github.com/mavolin/stormy/pkg/repository"
+	"github.com/mavolin/stormy/pkg/utils/zapadam"
+	"github.com/mavolin/stormy/pkg/utils/zapstate"
 	"github.com/mavolin/stormy/plugin/idea"
 )
 
@@ -126,7 +126,7 @@ func addDebugLoggers(b *bot.Bot, l *zap.SugaredLogger) {
 			"method", dr.Method,
 			"header", dr.Header,
 			"body", body,
-		).Debug("making a request to", dr.URL.Host)
+		).Debug("making a request to ", dr.URL.Host)
 
 		return nil
 	})

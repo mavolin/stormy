@@ -8,7 +8,7 @@ import (
 	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
 
-	"github.com/mavolin/stormy/internal/zapadam"
+	"github.com/mavolin/stormy/pkg/utils/zapadam"
 )
 
 func init() {

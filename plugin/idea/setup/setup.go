@@ -17,10 +17,10 @@ import (
 	"github.com/mavolin/adam/pkg/utils/msgbuilder"
 	"github.com/mavolin/disstate/v4/pkg/state"
 
-	"github.com/mavolin/stormy/internal/morearg"
 	"github.com/mavolin/stormy/internal/stdcolor"
-	"github.com/mavolin/stormy/internal/utils/deleteall"
-	"github.com/mavolin/stormy/internal/utils/wizard"
+	"github.com/mavolin/stormy/pkg/morearg"
+	"github.com/mavolin/stormy/pkg/utils/deleteall"
+	"github.com/mavolin/stormy/pkg/utils/wizard"
 )
 
 type Setup struct {
@@ -65,9 +65,12 @@ func New(r Repository) *Setup {
 							"Defaults to `thumbs`.",
 					},
 					{
-						Name:        "vote-duration",
-						Aliases:     []string{"duration", "vd"},
-						Type:        arg.SimpleDuration,
+						Name:    "vote-duration",
+						Aliases: []string{"duration", "vd"},
+						Type: arg.Duration{
+							Min: duration.Minute,
+							Max: duration.Week,
+						},
 						Default:     morearg.Undefined,
 						Description: "The duration to allow voting for. Defaults to infinity (`0`).",
 					},
