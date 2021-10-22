@@ -5,6 +5,7 @@ import (
 	"github.com/mavolin/adam/pkg/plugin"
 
 	"github.com/mavolin/stormy/plugin/idea/disable"
+	"github.com/mavolin/stormy/plugin/idea/how"
 	"github.com/mavolin/stormy/plugin/idea/setup"
 )
 
@@ -20,6 +21,7 @@ func New(r Repository) plugin.Module {
 	})
 
 	mod.AddCommand(disable.New(r))
+	mod.AddCommand(how.New())
 	mod.AddCommand(setup.New(r))
 
 	return mod
