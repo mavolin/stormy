@@ -8,30 +8,32 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
+	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 	"github.com/getsentry/sentry-go"
 	"github.com/mavolin/adam/pkg/bot"
+	"github.com/mavolin/adam/pkg/errors"
+	"github.com/mavolin/adam/pkg/i18n"
 	"github.com/mavolin/adam/pkg/impl/command/help"
 	"github.com/mavolin/disstate/v4/pkg/state"
 	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/mavolin/stormy/internal/errhandler"
+	"github.com/mavolin/stormy/internal/stdcolor"
 	"github.com/mavolin/stormy/pkg/repository"
 	"github.com/mavolin/stormy/pkg/utils/zapadam"
 	"github.com/mavolin/stormy/pkg/utils/zapstate"
-	"github.com/mavolin/stormy/plugin/idea"
+	"github.com/mavolin/stormy/service/idea"
 )
 
 type BotOptions struct {
-	Token               string
-	Owners              []discord.UserID
-	Status              discord.Status
-	ActivityType        discord.ActivityType
-	ActivityName        string
-	ActivityURL         discord.URL
-	GatewayErrorHandler func(error)
-	StateErrorHandler   func(error)
-	StatePanicHandler   func(rec interface{})
+	Token        string
+	Owners       []discord.UserID
+	Status       discord.Status
+	ActivityType discord.ActivityType
+	ActivityName string
+	ActivityURL  discord.URL
 
 	Logger *zap.SugaredLogger
 	Hub    *sentry.Hub
@@ -49,20 +51,21 @@ func Bot(o BotOptions) (*bot.Bot, error) {
 		ActivityType:         o.ActivityType,
 		ActivityName:         o.ActivityName,
 		ActivityURL:          o.ActivityURL,
-		GatewayErrorHandler:  o.GatewayErrorHandler,
-		StateErrorHandler:    o.StateErrorHandler,
-		StatePanicHandler:    o.StatePanicHandler,
+		GatewayErrorHandler:  errhandler.NewGatewayHandler(o.Logger, o.Hub),
+		StatePanicHandler:    errhandler.NewStatePanicHandler(o.Logger, o.Hub),
 		NoDefaultMiddlewares: true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	b.State.ErrorHandler = errhandler.NewStateErrorHandler(b.State, o.Logger, o.Hub)
+
+	configureErrors()
+
 	if o.Logger.Desugar().Core().Enabled(zapcore.DebugLevel) {
 		addDebugLoggers(b, o.Logger)
 	}
-
-	b.State.AddMiddleware(zapstate.NewMiddleware(o.Logger))
 
 	addMiddlewares(b, o)
 	addPlugins(b, o.Repository)
@@ -74,12 +77,17 @@ func Bot(o BotOptions) (*bot.Bot, error) {
 }
 
 func addMiddlewares(b *bot.Bot, o BotOptions) {
+	// ================================ State Middlewares ================================
+	b.State.AddMiddleware(zapstate.NewMiddleware(o.Logger))
+
+	// ================================ Bot Middlewares ================================
+
 	sentryWrapper := sentryadam.New(sentryadam.Options{Hub: o.Hub})
 
 	b.AddMiddleware(sentryWrapper.PreRouteMiddleware)
 	b.AddMiddleware(zapadam.NewFallbackMiddleware(o.Logger))
 	b.AddMiddleware(bot.CheckMessageType)
-	b.AddMiddleware(bot.CheckHuman) // if Options.AllowBot is true
+	b.AddMiddleware(bot.CheckHuman)
 	b.AddMiddleware(bot.NewSettingsRetriever(bot.StaticSettings()))
 	b.AddMiddleware(bot.CheckPrefix)
 	b.AddMiddleware(bot.FindCommand)
@@ -99,10 +107,24 @@ func addMiddlewares(b *bot.Bot, o BotOptions) {
 func addPlugins(b *bot.Bot, r repository.Repository) {
 	b.AddCommand(help.New(help.Options{}))
 
-	b.AddModule(idea.New(r))
+	b.AddModule(idea.NewModule(r))
+}
+
+func configureErrors() {
+	errors.Log = errhandler.ErrorLog
+
+	errors.SetErrorEmbedTemplate(func(*i18n.Localizer) discord.Embed {
+		return discord.Embed{Title: "Err", Color: stdcolor.Red}
+	})
+
+	errors.SetInfoEmbedTemplate(func(*i18n.Localizer) discord.Embed {
+		return discord.Embed{Title: "Info", Color: stdcolor.Default}
+	})
 }
 
 func addDebugLoggers(b *bot.Bot, l *zap.SugaredLogger) {
+	wsutil.WSDebug = l.Named("ws_debug").Debug
+
 	reqLogger := l.Named("api_client")
 	b.State.Client.Client.OnRequest = append(b.State.Client.Client.OnRequest, func(r httpdriver.Request) (err error) {
 		dr, ok := r.(*httpdriver.DefaultRequest)

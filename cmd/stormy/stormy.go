@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mavolin/stormy/internal/config"
-	"github.com/mavolin/stormy/internal/errhandler"
 	"github.com/mavolin/stormy/internal/setup"
 )
 
@@ -59,18 +58,16 @@ func run(l *zap.SugaredLogger) error {
 	})
 
 	b, err := setup.Bot(setup.BotOptions{
-		Token:               c.BotToken,
-		Owners:              c.Owners,
-		Status:              c.Status,
-		ActivityType:        c.Activity.Type,
-		ActivityName:        c.Activity.Name,
-		ActivityURL:         c.Activity.URL,
-		GatewayErrorHandler: errhandler.NewGateway(l, hub),
-		StateErrorHandler:   errhandler.NewStateError(l, hub),
-		StatePanicHandler:   errhandler.NewStatePanic(l, hub),
-		Logger:              l,
-		Hub:                 hub,
-		Repository:          repo,
+		Token:        c.BotToken,
+		Owners:       c.Owners,
+		Status:       c.Status,
+		ActivityType: c.Activity.Type,
+		ActivityName: c.Activity.Name,
+		ActivityURL:  c.Activity.URL,
+
+		Logger:     l,
+		Hub:        hub,
+		Repository: repo,
 	})
 	if err != nil {
 		return err

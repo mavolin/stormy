@@ -5,15 +5,12 @@ import (
 	"github.com/mavolin/adam/pkg/bot"
 	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/plugin"
+	"github.com/mavolin/disstate/v4/pkg/state"
 	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
 
 	"github.com/mavolin/stormy/pkg/utils/zapadam"
 )
-
-func init() {
-	errors.Log = ErrorLog
-}
 
 // ErrorLog returns the logger function used for errors.Log.
 // It logs the error using the passed *zap.SugaredLogger, and extracts the
@@ -28,9 +25,9 @@ func ErrorLog(ctx *plugin.Context, err *errors.InternalError) {
 		Error("error during command execution")
 }
 
-// NewGateway returns the error handler function used for the
+// NewGatewayHandler returns the error handler function used for the
 // bot.Options.GatewayErrorHandler.
-func NewGateway(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
+func NewGatewayHandler(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	l = l.Named("gateway")
 
 	h = h.Clone()
@@ -44,23 +41,33 @@ func NewGateway(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	}
 }
 
-// NewStateError returns the logger function used for the
+// NewStateErrorHandler returns the logger function used for the
 // bot.Option.StateErrorHandler.
-func NewStateError(l *zap.SugaredLogger, h *sentry.Hub) func(error) {
+func NewStateErrorHandler(s *state.State, l *zap.SugaredLogger, h *sentry.Hub) func(error) {
 	l = l.Named("state")
 
 	h = h.Clone()
 	h.Scope().SetTransaction("state")
 
 	return func(err error) {
+		var herr handler
+		if errors.As(err, &herr) {
+			newErr := herr.Handle(s)
+			if newErr != nil {
+				err = newErr
+			} else if !errors.As(err, new(*InternalError)) {
+				return
+			}
+		}
+
 		h.CaptureException(err)
 		l.Error(err)
 	}
 }
 
-// NewStatePanic returns the logger function used for the
+// NewStatePanicHandler returns the logger function used for the
 // bot.Option.StatePanicHandler.
-func NewStatePanic(l *zap.SugaredLogger, h *sentry.Hub) func(interface{}) {
+func NewStatePanicHandler(l *zap.SugaredLogger, h *sentry.Hub) func(interface{}) {
 	l = l.Named("state")
 
 	h = h.Clone()
