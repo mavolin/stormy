@@ -5,5 +5,6 @@ import (
 )
 
 type Repository interface {
-	idearepo.Repository
+	idearepo.IdeaRepository
+	idearepo.ChannelSettingsRepository
 }

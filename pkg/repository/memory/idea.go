@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -10,37 +11,20 @@ import (
 	idearepo "github.com/mavolin/stormy/modules/idea/repository"
 )
 
-func (r *Repository) IdeaChannelSettings(channelID discord.ChannelID) (*idearepo.ChannelSettings, error) {
-	r.ideaChannelSettingMu.RLock()
-	defer r.ideaChannelSettingMu.RUnlock()
-
-	s, ok := r.ideaChannelSettings[channelID]
-	if !ok {
-		return nil, nil
-	}
-
-	return &s, nil
+type ideaRepo struct {
+	ideas map[discord.MessageID]idearepo.Idea
+	mu    sync.RWMutex
 }
 
-func (r *Repository) SetIdeaChannelSettings(channelID discord.ChannelID, s idearepo.ChannelSettings) error {
-	r.ideaChannelSettingMu.Lock()
-	defer r.ideaChannelSettingMu.Unlock()
+var _ idearepo.IdeaRepository = (*ideaRepo)(nil)
 
-	r.ideaChannelSettings[channelID] = s
-	return nil
+func newIdeaRepo() *ideaRepo {
+	return &ideaRepo{ideas: make(map[discord.MessageID]idearepo.Idea)}
 }
 
-func (r *Repository) DisableIdeaChannel(channelID discord.ChannelID) error {
-	r.ideaChannelSettingMu.Lock()
-	defer r.ideaChannelSettingMu.Unlock()
-
-	delete(r.ideaChannelSettings, channelID)
-	return idearepo.ErrChannelAlreadyDisabled
-}
-
-func (r *Repository) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
-	r.ideaMu.RLock()
-	defer r.ideaMu.RUnlock()
+func (r *ideaRepo) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	i, ok := r.ideas[messageID]
 	if !ok {
@@ -50,27 +34,27 @@ func (r *Repository) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
 	return &i, nil
 }
 
-func (r *Repository) SaveIdea(idea *idearepo.Idea) error {
-	r.ideaMu.Lock()
-	defer r.ideaMu.Unlock()
+func (r *ideaRepo) SaveIdea(idea *idearepo.Idea) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	r.ideas[idea.MessageID] = *idea
 	return nil
 }
 
-func (r *Repository) DeleteIdea(messageID discord.MessageID) error {
-	r.ideaMu.Lock()
-	defer r.ideaMu.Unlock()
+func (r *ideaRepo) DeleteIdea(messageID discord.MessageID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	delete(r.ideas, messageID)
 	return nil
 }
 
-func (r *Repository) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, limit int) ([]*idearepo.Idea, error) {
+func (r *ideaRepo) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, limit int) ([]*idearepo.Idea, error) {
 	ideas := make([]*idearepo.Idea, 0, limit)
 
-	r.ideaMu.Lock()
-	defer r.ideaMu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	for _, idea := range r.ideas {
 		if idea.VoteUntil == nil {
@@ -107,9 +91,9 @@ func (r *Repository) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, 
 	return ideas, nil
 }
 
-func (r *Repository) ExpiredIdeas(before time.Time) (idearepo.IdeaCursor, error) {
-	r.ideaMu.RLock()
-	defer r.ideaMu.RUnlock()
+func (r *ideaRepo) ExpiredIdeas(before time.Time) (idearepo.IdeaCursor, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	var ideas []idearepo.Idea
 	for _, idea := range r.ideas {
@@ -125,9 +109,9 @@ func (r *Repository) ExpiredIdeas(before time.Time) (idearepo.IdeaCursor, error)
 	return newIdeaCursor(ideas), nil
 }
 
-func (r *Repository) DeleteExpiredIdeas(before time.Time) error {
-	r.ideaMu.Lock()
-	defer r.ideaMu.Unlock()
+func (r *ideaRepo) DeleteExpiredIdeas(before time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	for messageID, idea := range r.ideas {
 		if idea.VoteUntil != nil && idea.VoteUntil.Before(before) {

@@ -29,12 +29,12 @@ type Setup struct {
 	command.Meta
 	bot.MiddlewareManager
 
-	repo repository.Repository
+	repo repository.ChannelSettingsRepository
 }
 
 var _ plugin.Command = new(Setup)
 
-func New(r repository.Repository) *Setup {
+func New(r repository.ChannelSettingsRepository) *Setup {
 	cmd := &Setup{
 		Meta: command.Meta{
 			Name:             "setup",

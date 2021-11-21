@@ -71,7 +71,7 @@ type deadlineWatcher struct {
 	service *Service
 	state   *state.State
 
-	r repository.Repository
+	r repository.IdeaRepository
 
 	// queue is a queue of expiring ideas.
 	queue *list.List
@@ -79,7 +79,7 @@ type deadlineWatcher struct {
 	ic chan *repository.Idea
 }
 
-func newDeadlineWatcher(service *Service, state *state.State, r repository.Repository) *deadlineWatcher {
+func newDeadlineWatcher(service *Service, state *state.State, r repository.IdeaRepository) *deadlineWatcher {
 	return &deadlineWatcher{
 		service: service,
 		state:   state,

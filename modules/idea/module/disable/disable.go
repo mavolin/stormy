@@ -15,12 +15,12 @@ import (
 type Disable struct {
 	command.Meta
 
-	repo repository.Repository
+	repo repository.ChannelSettingsRepository
 }
 
 var _ plugin.Command = new(Disable)
 
-func New(r repository.Repository) *Disable {
+func New(r repository.ChannelSettingsRepository) *Disable {
 	return &Disable{
 		Meta: command.Meta{
 			Name:             "disable",

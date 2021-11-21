@@ -36,8 +36,8 @@ type (
 	}
 
 	Mongo struct {
-		URI    string `env:"SENTRY_MONGO_URI"`
-		DBName string `env:"SENTRY_MONGO_DB_NAME"`
+		URI    string `env:"STORMY_MONGO_URI"`
+		DBName string `env:"STORMY_MONGO_DB_NAME"`
 	}
 )
 
