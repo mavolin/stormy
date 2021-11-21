@@ -21,10 +21,10 @@ import (
 
 	"github.com/mavolin/stormy/internal/errhandler"
 	"github.com/mavolin/stormy/internal/stdcolor"
+	"github.com/mavolin/stormy/modules/idea/module"
 	"github.com/mavolin/stormy/pkg/repository"
 	"github.com/mavolin/stormy/pkg/utils/zapadam"
 	"github.com/mavolin/stormy/pkg/utils/zapstate"
-	"github.com/mavolin/stormy/service/idea"
 )
 
 type BotOptions struct {
@@ -70,7 +70,6 @@ func Bot(o BotOptions) (*bot.Bot, error) {
 	addMiddlewares(b, o)
 	addPlugins(b, o.Repository)
 
-	b.AddIntents(b.State.DeriveIntents())
 	b.AddIntents(gateway.IntentGuildMessageTyping)
 
 	return b, err
@@ -107,14 +106,14 @@ func addMiddlewares(b *bot.Bot, o BotOptions) {
 func addPlugins(b *bot.Bot, r repository.Repository) {
 	b.AddCommand(help.New(help.Options{}))
 
-	b.AddModule(idea.NewModule(r))
+	b.AddModule(module.New(r))
 }
 
 func configureErrors() {
 	errors.Log = errhandler.ErrorLog
 
 	errors.SetErrorEmbedTemplate(func(*i18n.Localizer) discord.Embed {
-		return discord.Embed{Title: "Err", Color: stdcolor.Red}
+		return discord.Embed{Title: "Error", Color: stdcolor.Red}
 	})
 
 	errors.SetInfoEmbedTemplate(func(*i18n.Localizer) discord.Embed {

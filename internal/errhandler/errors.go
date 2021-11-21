@@ -1,6 +1,7 @@
 package errhandler
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -10,6 +11,12 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/event"
 	"github.com/mavolin/disstate/v4/pkg/state"
 )
+
+// Abort is the error used to signal that execution of the current handler
+// should be aborted.
+// It does not send an error message.
+//nolint:revive
+var Abort = errors.New("abort")
 
 type handler interface {
 	Handle(s *state.State) error
@@ -57,6 +64,10 @@ func NewInfo(e *event.MessageCreate, description string) *Info {
 	return &Info{e: e, Description: description}
 }
 
+func NewInfof(e *event.MessageCreate, descriptionFormat string, a ...interface{}) *Info {
+	return NewInfo(e, fmt.Sprintf(descriptionFormat, a...))
+}
+
 func (i *Info) Handle(s *state.State) error {
 	e := errors.NewInfoEmbed(i18n.NewFallbackLocalizer())
 	e.Description = i.Description
@@ -91,6 +102,10 @@ func NewError(e *event.MessageCreate, description string) *Error {
 	return &Error{e: e, Description: description}
 }
 
+func NewErrorf(e *event.MessageCreate, descriptionFormat string, a ...interface{}) *Error {
+	return NewError(e, fmt.Sprintf(descriptionFormat, a...))
+}
+
 func (e *Error) Handle(s *state.State) error {
 	embed := errors.NewErrorEmbed(i18n.NewFallbackLocalizer())
 	embed.Description = e.Description
@@ -114,7 +129,7 @@ func (e *Error) Error() string {
 type InternalError struct {
 	e           *event.MessageCreate
 	Description string
-	Err         error
+	Err         *errors.InternalError
 }
 
 var (
@@ -124,15 +139,19 @@ var (
 
 var defaultInternalErrorDesc = errors.NewWithStack("").Description(i18n.NewFallbackLocalizer())
 
-func NewInternalError(e *event.MessageCreate, err error) *InternalError {
+func NewInternalError(e *event.MessageCreate, err error) error {
 	return NewInternalErrorWithDescription(e, err, defaultInternalErrorDesc)
 }
 
-func NewInternalErrorWithDescription(e *event.MessageCreate, err error, description string) *InternalError {
+func NewInternalErrorWithDescription(e *event.MessageCreate, err error, description string) error {
+	if err == nil {
+		return nil
+	}
+
 	return &InternalError{
 		e:           e,
 		Description: description,
-		Err:         errors.WithStack(err),
+		Err:         errors.MustInternal(err),
 	}
 }
 
@@ -150,4 +169,8 @@ func (e *InternalError) Handle(s *state.State) error {
 
 func (e *InternalError) Error() string {
 	return e.Err.Error()
+}
+
+func (e *InternalError) StackTrace() errors.StackTrace {
+	return e.Err.StackTrace()
 }

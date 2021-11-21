@@ -19,6 +19,7 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/state"
 
 	"github.com/mavolin/stormy/internal/stdcolor"
+	"github.com/mavolin/stormy/modules/idea/repository"
 	"github.com/mavolin/stormy/pkg/morearg"
 	"github.com/mavolin/stormy/pkg/utils/deleteall"
 	"github.com/mavolin/stormy/pkg/utils/wizard"
@@ -28,12 +29,12 @@ type Setup struct {
 	command.Meta
 	bot.MiddlewareManager
 
-	repo Repository
+	repo repository.Repository
 }
 
 var _ plugin.Command = new(Setup)
 
-func New(r Repository) *Setup {
+func New(r repository.Repository) *Setup {
 	cmd := &Setup{
 		Meta: command.Meta{
 			Name:             "setup",
@@ -54,10 +55,10 @@ func New(r Repository) *Setup {
 						Name:    "vote-type",
 						Aliases: []string{"type", "vt"},
 						Type: arg.Choice{
-							{Name: "thumbs", Value: Thumbs},
-							{Name: "2 emojis", Value: TwoEmojis},
-							{Name: "3 emojis", Value: ThreeEmojis},
-							{Name: "5 emojis", Value: FiveEmojis},
+							{Name: "thumbs", Value: repository.Thumbs},
+							{Name: "2 emojis", Value: repository.TwoEmojis},
+							{Name: "3 emojis", Value: repository.ThreeEmojis},
+							{Name: "5 emojis", Value: repository.FiveEmojis},
 						},
 						Default: morearg.Undefined,
 						Description: "The type of vote. Options are: `thumbs` (👍, 👎), " +
@@ -89,18 +90,6 @@ func New(r Repository) *Setup {
 						Default:     morearg.Undefined,
 						Description: "The color of the embed. Defaults to `44c5f3`.",
 					},
-					{
-						Name:    "thumbnail",
-						Aliases: []string{"t"},
-						Type:    arg.SimpleLink,
-						Description: "The thumbnail to use. Must be a link to an image." +
-							"Defaults to none.",
-					},
-					{
-						Name:        "rm-thumbnail",
-						Type:        arg.Switch,
-						Description: "Remove the current thumbnail. Can only be used when editing.",
-					},
 				},
 			},
 			ChannelTypes:   plugin.GuildTextChannels,
@@ -129,7 +118,7 @@ func (setup *Setup) Invoke(s *state.State, ctx *plugin.Context) (interface{}, er
 }
 
 func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interface{}, error) {
-	var set ChannelSettings
+	var set repository.ChannelSettings
 
 	if len(ctx.RawArgs()) == 0 && !ctx.Flags.Bool("use-defaults") {
 		w := wizard.New(s, ctx)
@@ -138,7 +127,6 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 		w.AddStep(voteDurationStep(&set.VoteDuration))
 		w.AddStep(anonymousStep(&set.Anonymous))
 		w.AddStep(colorStep(&set.Color))
-		w.AddStep(thumbnailStep(&set.Thumbnail))
 
 		if err := w.Start(); err != nil {
 			if errors.Is(err, errors.Abort) {
@@ -151,16 +139,15 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 			return nil, err
 		}
 	} else {
-		set = ChannelSettings{
-			VoteType:     morearg.FlagOrDefault(ctx, "vote-type", Thumbs).(VoteType),
+		set = repository.ChannelSettings{
+			VoteType:     morearg.FlagOrDefault(ctx, "vote-type", repository.Thumbs).(repository.VoteType),
 			VoteDuration: morearg.FlagOrDefault(ctx, "vote-duration", time.Duration(0)).(time.Duration),
 			Anonymous:    ctx.Flags.Bool("anonymous"),
 			Color:        morearg.FlagOrDefault(ctx, "color", stdcolor.Default).(discord.Color),
-			Thumbnail:    ctx.Flags.String("thumbnail"),
 		}
 	}
 
-	err := setup.repo.IdeaSetChannelSettings(ctx.ChannelID, set)
+	err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, set)
 	if err != nil {
 		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save the settings you choose. "+
 			"Try again in a bit.")
@@ -170,18 +157,19 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 		WithTitle("All Set!").
 		WithColor(stdcolor.Green).
 		WithDescription("Every message sent in this channel will be turned into an idea users can vote on, " +
-			"starting now. If you need help with posting or formatting an idea, use `idea how`."), nil
+			"starting now. If you need help with posting or formatting an idea, use `idea how`.\n" +
+			"I'll automatically delete all setup related messages in 30 seconds."), nil
 }
 
 func (setup *Setup) modifySetup(
-	s *state.State, ctx *plugin.Context, oldSettings ChannelSettings,
+	s *state.State, ctx *plugin.Context, oldSettings repository.ChannelSettings,
 ) (_ interface{}, err error) {
 	if ctx.Flags.Bool("use-defaults") {
 		return nil, errors.NewUserError("The `use-defaults` flag can only be used when setting up a new channel. " +
 			"However, this channel is already set up.")
 	}
 
-	var newSettings ChannelSettings
+	var newSettings repository.ChannelSettings
 
 	if len(ctx.RawArgs()) == 0 {
 		newSettings, err = setup.modifySetupInteractive(s, ctx, oldSettings)
@@ -218,7 +206,7 @@ func (setup *Setup) modifySetup(
 			WithDescription("I've discarded the changes you made. Everything remains as is."), nil
 	}
 
-	if err := setup.repo.IdeaSetChannelSettings(ctx.ChannelID, newSettings); err != nil {
+	if err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, newSettings); err != nil {
 		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save your changes. "+
 			"Try again in a bit.")
 	}
@@ -230,8 +218,8 @@ func (setup *Setup) modifySetup(
 }
 
 func (setup *Setup) modifySetupInteractive(
-	s *state.State, ctx *plugin.Context, set ChannelSettings,
-) (ChannelSettings, error) {
+	s *state.State, ctx *plugin.Context, set repository.ChannelSettings,
+) (repository.ChannelSettings, error) {
 	var steps []wizard.Step
 	var done bool
 
@@ -245,18 +233,17 @@ func (setup *Setup) modifySetupInteractive(
 			With(msgbuilder.NewSelectOption("Vote Type", voteTypeStep(&set.VoteType))).
 			With(msgbuilder.NewSelectOption("Vote Duration", voteDurationStep(&set.VoteDuration))).
 			With(msgbuilder.NewSelectOption("Anonymity", anonymousStep(&set.Anonymous))).
-			With(msgbuilder.NewSelectOption("Color", colorStep(&set.Color))).
-			With(msgbuilder.NewSelectOption("Thumbnail", thumbnailStep(&set.Thumbnail)))).
+			With(msgbuilder.NewSelectOption("Color", colorStep(&set.Color)))).
 		WithAwaitedComponent(msgbuilder.NewActionRow(&done).
 			With(msgbuilder.NewButton(discord.SuccessButton, "Done", true)).
 			With(msgbuilder.NewButton(discord.DangerButton, "Cancel", false))).
 		ReplyAndAwait(30 * time.Second)
 	if err != nil {
-		return ChannelSettings{}, err
+		return repository.ChannelSettings{}, err
 	}
 
 	if !done {
-		return ChannelSettings{}, errors.Abort
+		return repository.ChannelSettings{}, errors.Abort
 	}
 
 	w := wizard.New(s, ctx)
@@ -267,13 +254,13 @@ func (setup *Setup) modifySetupInteractive(
 	return set, w.Start()
 }
 
-func (setup *Setup) modifySetupFlags(ctx *plugin.Context, set ChannelSettings) ChannelSettings {
+func (setup *Setup) modifySetupFlags(ctx *plugin.Context, set repository.ChannelSettings) repository.ChannelSettings {
 	if d := ctx.Flags["vote-duration"]; d != morearg.Undefined {
 		set.VoteDuration = d.(time.Duration)
 	}
 
 	if t := ctx.Flags["vote-type"]; t != morearg.Undefined {
-		set.VoteType = t.(VoteType)
+		set.VoteType = t.(repository.VoteType)
 	}
 
 	if ctx.Flags.Bool("anonymous") {
@@ -284,20 +271,14 @@ func (setup *Setup) modifySetupFlags(ctx *plugin.Context, set ChannelSettings) C
 		set.Color = c.(discord.Color)
 	}
 
-	if ctx.Flags.Bool("rm-thumbnail") {
-		set.Thumbnail = ""
-	} else if t := ctx.Flags["thumbnail"]; t != morearg.Undefined {
-		set.Thumbnail = t.(string)
-	}
-
 	return set
 }
 
-func (setup *Setup) modifyChangeList(oldS, newS ChannelSettings) *msgbuilder.EmbedBuilder {
+func (setup *Setup) modifyChangeList(oldS, newS repository.ChannelSettings) *msgbuilder.EmbedBuilder {
 	embed := msgbuilder.NewEmbed().
 		WithTitle("Everything in Order?").
 		WithColor(stdcolor.Default).
-		WithDescription("You are about to change the following settings. Do you wish to proceed?")
+		WithDescription("You are about to change the following settings. do you wish to proceed?")
 
 	if oldS.VoteType != newS.VoteType {
 		embed.WithInlinedField("Vote Type", fmt.Sprintf("`%s` ➡ `%s`", oldS.VoteType, newS.VoteType))
@@ -333,10 +314,6 @@ func (setup *Setup) modifyChangeList(oldS, newS ChannelSettings) *msgbuilder.Emb
 
 	if oldS.Color != newS.Color {
 		embed.WithInlinedField("Color", fmt.Sprintf("`%06x` ➡ `%06x`", oldS.Color, newS.Color))
-	}
-
-	if oldS.Thumbnail != newS.Thumbnail {
-		embed.WithInlinedField("Thumbnail", "*changed*")
 	}
 
 	return embed

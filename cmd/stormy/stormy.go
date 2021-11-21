@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	stdlog "log"
 	"os"
@@ -53,9 +54,7 @@ func run(l *zap.SugaredLogger) error {
 		return err
 	}
 
-	repo := setup.Repository(setup.RepositoryOptions{
-		Logger: l,
-	})
+	repo := setup.Repository(setup.RepositoryOptions{Logger: l})
 
 	b, err := setup.Bot(setup.BotOptions{
 		Token:        c.BotToken,
@@ -73,10 +72,22 @@ func run(l *zap.SugaredLogger) error {
 		return err
 	}
 
+	err = setup.Services(setup.ServiceOptions{
+		State:      b.State,
+		Repository: repo,
+		Logger:     l,
+		Hub:        hub,
+	})
+	if err != nil {
+		return err
+	}
+
 	b.State.AddHandlerOnce(func(_ *state.State, e *event.Ready) {
 		ml.Infof("received first ready event, accepting commands as @%s#%s",
 			e.User.Username, e.User.Discriminator)
 	})
+
+	b.AddIntents(b.State.DeriveIntents())
 
 	ml.Info("starting bot")
 	if err = b.Open(4 * time.Second); err != nil {
@@ -90,7 +101,18 @@ func run(l *zap.SugaredLogger) error {
 	recSig := <-sig
 
 	l.Infof("received %s, waiting for all commands to finish", recSig)
-	defer l.Info("done")
 
-	return b.State.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	defer func() {
+		select {
+		case <-ctx.Done():
+			l.Info("timeout: I won't wait any longer for event handlers to finish")
+		default:
+			l.Info("done")
+		}
+	}()
+
+	return b.State.Close(ctx)
 }

@@ -1,7 +1,6 @@
 package setup
 
 import (
-	"net/url"
 	"strconv"
 	"time"
 
@@ -12,10 +11,11 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/state"
 
 	"github.com/mavolin/stormy/internal/stdcolor"
+	"github.com/mavolin/stormy/modules/idea/repository"
 	"github.com/mavolin/stormy/pkg/utils/wizard"
 )
 
-func voteTypeStep(typ *VoteType) wizard.Step {
+func voteTypeStep(typ *repository.VoteType) wizard.Step {
 	return wizard.Step{
 		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
 			return msgbuilder.New(s, ctx).
@@ -24,10 +24,10 @@ func voteTypeStep(typ *VoteType) wizard.Step {
 					WithColor(stdcolor.Default).
 					WithDescription("What type of scale should be used to vote?")).
 				WithComponent(msgbuilder.NewSelect(typ).
-					WithDefault(msgbuilder.NewSelectOption("👍, and 👎", Thumbs)).
-					With(msgbuilder.NewSelectOption("😀 and ☹", TwoEmojis)).
-					With(msgbuilder.NewSelectOption("😀, 😐, and ☹", ThreeEmojis)).
-					With(msgbuilder.NewSelectOption("😀, 🙂, 😐, 🙁, and ☹", FiveEmojis))).
+					WithDefault(msgbuilder.NewSelectOption("👍, and 👎", repository.Thumbs)).
+					With(msgbuilder.NewSelectOption("😀 and ☹", repository.TwoEmojis)).
+					With(msgbuilder.NewSelectOption("😀, 😐, and ☹", repository.ThreeEmojis)).
+					With(msgbuilder.NewSelectOption("😀, 🙂, 😐, 🙁, and ☹", repository.FiveEmojis))).
 				WithAwaitedComponent(msgbuilder.NewActionRow(new(struct{})).
 					With(msgbuilder.NewButton(discord.SuccessButton, "Done", struct{}{})))
 		},
@@ -121,44 +121,6 @@ func colorStep(color *discord.Color) wizard.Step {
 			}
 
 			*color = discord.Color(cInt)
-			return nil
-		},
-	}
-}
-
-func thumbnailStep(thumbnailURL *discord.URL) wizard.Step {
-	var thumbnailMsg discord.Message
-	var none bool
-
-	return wizard.Step{
-		Question: func(s *state.State, ctx *plugin.Context) *msgbuilder.Builder {
-			return msgbuilder.New(s, ctx).
-				WithEmbed(msgbuilder.NewEmbed().
-					WithTitle(wizard.Title(ctx, "Thumbnail")).
-					WithColor(stdcolor.Default).
-					WithDescription("What thumbnail (little picture on the top right) should each post contain?\n"+
-						"Please upload an image, send a link, or click `None`.")).
-				WithAwaitedResponse(&thumbnailMsg, 120*time.Second, 20*time.Second).
-				WithAwaitedComponent(msgbuilder.NewActionRow(&none).
-					With(msgbuilder.NewButton(discord.PrimaryButton, "None", true)))
-		},
-		WaitFor: 180 * time.Second,
-		Validator: func(s *state.State, ctx *plugin.Context) error {
-			if none {
-				return nil
-			}
-
-			if len(thumbnailMsg.Attachments) > 0 {
-				*thumbnailURL = thumbnailMsg.Attachments[0].URL
-				return nil
-			}
-
-			_, err := url.ParseRequestURI(thumbnailMsg.Content)
-			if err != nil {
-				return wizard.NewRetryError("The link you gave me is invalid.")
-			}
-
-			*thumbnailURL = thumbnailMsg.Content
 			return nil
 		},
 	}

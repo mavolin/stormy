@@ -9,17 +9,18 @@ import (
 	"github.com/mavolin/disstate/v4/pkg/state"
 
 	"github.com/mavolin/stormy/internal/stdcolor"
+	"github.com/mavolin/stormy/modules/idea/repository"
 )
 
 type Disable struct {
 	command.Meta
 
-	repo Repository
+	repo repository.Repository
 }
 
 var _ plugin.Command = new(Disable)
 
-func New(r Repository) *Disable {
+func New(r repository.Repository) *Disable {
 	return &Disable{
 		Meta: command.Meta{
 			Name:             "disable",
@@ -33,7 +34,7 @@ func New(r Repository) *Disable {
 }
 
 func (d *Disable) Invoke(_ *state.State, ctx *plugin.Context) (interface{}, error) {
-	if err := d.repo.IdeaDisableChannel(ctx.ChannelID); err != nil {
+	if err := d.repo.DisableIdeaChannel(ctx.ChannelID); err != nil {
 		return nil, err
 	}
 

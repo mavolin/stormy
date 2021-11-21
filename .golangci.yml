@@ -8,8 +8,6 @@ linters:
     - errorlint
     - exportloopref
     - forbidigo
-    - funlen
-    - gocognit
     - gocritic
     - godot
     - gofumpt
@@ -37,11 +35,6 @@ linters:
     - whitespace
 
 linters-settings:
-  funlen:
-    lines: 80
-    statements: 55
-  gocognit:
-    min-complexity: 37
   godot:
     exclude:
       - ^\s*.+:.+$
@@ -63,12 +56,7 @@ issues:
     - path: (?:_test|test_util)\.go$
       linters:
         - bodyclose
-        - dupl
         - errcheck
         - errorlint
-        - funlen
-        - gocognit
-        - goconst
-        - gocyclo
         - gosec
         - unparam

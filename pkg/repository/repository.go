@@ -1,7 +1,9 @@
 package repository
 
-import "github.com/mavolin/stormy/plugin/idea"
+import (
+	idearepo "github.com/mavolin/stormy/modules/idea/repository"
+)
 
 type Repository interface {
-	idea.Repository
+	idearepo.Repository
 }
