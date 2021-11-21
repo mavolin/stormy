@@ -2,6 +2,7 @@
 package service
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -101,13 +102,13 @@ func New(o Options) (*Service, error) {
 //
 // Therefore, this method should be preferred over the repository's Idea
 // method.
-func (service *Service) idea(messageID discord.MessageID) (*repository.Idea, error) {
+func (service *Service) idea(ctx context.Context, messageID discord.MessageID) (*repository.Idea, error) {
 	// use Get over Contains to update frequency and recency
 	if _, ok := service.expiredIdeas.Get(messageID); ok {
 		return nil, nil
 	}
 
-	i, err := service.repo.Idea(messageID)
+	i, err := service.repo.Idea(ctx, messageID)
 	if err == nil && i == nil {
 		service.expiredIdeas.Add(messageID, nil)
 	}
@@ -115,17 +116,17 @@ func (service *Service) idea(messageID discord.MessageID) (*repository.Idea, err
 	return i, err
 }
 
-func (service *Service) saveIdea(i *repository.Idea) error {
+func (service *Service) saveIdea(ctx context.Context, i *repository.Idea) error {
 	if i.VoteUntil != nil {
 		service.timeoutWatcher.addIdea(i)
 	}
 
-	return service.repo.SaveIdea(i)
+	return service.repo.SaveIdea(ctx, i)
 }
 
 // deleteIdea stores the deletion of the message in the cache and then calls
 // repo.DeleteIdea.
-func (service *Service) deleteIdea(messageID discord.MessageID) error {
+func (service *Service) deleteIdea(ctx context.Context, messageID discord.MessageID) error {
 	service.expiredIdeas.Add(messageID, nil)
-	return service.repo.DeleteIdea(messageID)
+	return service.repo.DeleteIdea(ctx, messageID)
 }

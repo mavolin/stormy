@@ -3,6 +3,7 @@
 package setup
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -104,24 +105,27 @@ func New(r repository.ChannelSettingsRepository) *Setup {
 	return cmd
 }
 
-func (setup *Setup) Invoke(s *state.State, ctx *plugin.Context) (interface{}, error) {
-	settings, err := setup.repo.IdeaChannelSettings(ctx.ChannelID)
+func (setup *Setup) Invoke(s *state.State, pctx *plugin.Context) (interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	settings, err := setup.repo.IdeaChannelSettings(ctx, pctx.ChannelID)
 	if err != nil {
 		return nil, err
 	}
 
 	if settings == nil {
-		return setup.firstTimeSetup(s, ctx)
+		return setup.firstTimeSetup(s, pctx)
 	}
 
-	return setup.modifySetup(s, ctx, *settings)
+	return setup.modifySetup(s, pctx, *settings)
 }
 
-func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interface{}, error) {
+func (setup *Setup) firstTimeSetup(s *state.State, pctx *plugin.Context) (interface{}, error) {
 	var set repository.ChannelSettings
 
-	if len(ctx.RawArgs()) == 0 && !ctx.Flags.Bool("use-defaults") {
-		w := wizard.New(s, ctx)
+	if len(pctx.RawArgs()) == 0 && !pctx.Flags.Bool("use-defaults") {
+		w := wizard.New(s, pctx)
 
 		w.AddStep(voteTypeStep(&set.VoteType))
 		w.AddStep(voteDurationStep(&set.VoteDuration))
@@ -140,14 +144,17 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 		}
 	} else {
 		set = repository.ChannelSettings{
-			VoteType:     morearg.FlagOrDefault(ctx, "vote-type", repository.Thumbs).(repository.VoteType),
-			VoteDuration: morearg.FlagOrDefault(ctx, "vote-duration", time.Duration(0)).(time.Duration),
-			Anonymous:    ctx.Flags.Bool("anonymous"),
-			Color:        morearg.FlagOrDefault(ctx, "color", stdcolor.Default).(discord.Color),
+			VoteType:     morearg.FlagOrDefault(pctx, "vote-type", repository.Thumbs).(repository.VoteType),
+			VoteDuration: morearg.FlagOrDefault(pctx, "vote-duration", time.Duration(0)).(time.Duration),
+			Anonymous:    pctx.Flags.Bool("anonymous"),
+			Color:        morearg.FlagOrDefault(pctx, "color", stdcolor.Default).(discord.Color),
 		}
 	}
 
-	err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, set)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := setup.repo.SetIdeaChannelSettings(ctx, pctx.ChannelID, set)
 	if err != nil {
 		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save the settings you choose. "+
 			"Try again in a bit.")
@@ -162,22 +169,22 @@ func (setup *Setup) firstTimeSetup(s *state.State, ctx *plugin.Context) (interfa
 }
 
 func (setup *Setup) modifySetup(
-	s *state.State, ctx *plugin.Context, oldSettings repository.ChannelSettings,
+	s *state.State, pctx *plugin.Context, oldSettings repository.ChannelSettings,
 ) (_ interface{}, err error) {
-	if ctx.Flags.Bool("use-defaults") {
+	if pctx.Flags.Bool("use-defaults") {
 		return nil, errors.NewUserError("The `use-defaults` flag can only be used when setting up a new channel. " +
 			"However, this channel is already set up.")
 	}
 
 	var newSettings repository.ChannelSettings
 
-	if len(ctx.RawArgs()) == 0 {
-		newSettings, err = setup.modifySetupInteractive(s, ctx, oldSettings)
+	if len(pctx.RawArgs()) == 0 {
+		newSettings, err = setup.modifySetupInteractive(s, pctx, oldSettings)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		newSettings = setup.modifySetupFlags(ctx, oldSettings)
+		newSettings = setup.modifySetupFlags(pctx, oldSettings)
 	}
 
 	if oldSettings == newSettings {
@@ -189,7 +196,7 @@ func (setup *Setup) modifySetup(
 
 	var ok bool
 
-	_, err = msgbuilder.New(s, ctx).
+	_, err = msgbuilder.New(s, pctx).
 		WithEmbed(setup.modifyChangeList(oldSettings, newSettings)).
 		WithAwaitedComponent(msgbuilder.NewActionRow(&ok).
 			With(msgbuilder.NewButton(discord.SuccessButton, "Yep, all good!", true)).
@@ -206,7 +213,10 @@ func (setup *Setup) modifySetup(
 			WithDescription("I've discarded the changes you made. Everything remains as is."), nil
 	}
 
-	if err := setup.repo.SetIdeaChannelSettings(ctx.ChannelID, newSettings); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := setup.repo.SetIdeaChannelSettings(ctx, pctx.ChannelID, newSettings); err != nil {
 		return nil, errors.WithDescription(err, "Something went wrong and I couldn't save your changes. "+
 			"Try again in a bit.")
 	}
@@ -218,12 +228,12 @@ func (setup *Setup) modifySetup(
 }
 
 func (setup *Setup) modifySetupInteractive(
-	s *state.State, ctx *plugin.Context, set repository.ChannelSettings,
+	s *state.State, pctx *plugin.Context, set repository.ChannelSettings,
 ) (repository.ChannelSettings, error) {
 	var steps []wizard.Step
 	var done bool
 
-	_, err := msgbuilder.New(s, ctx).
+	_, err := msgbuilder.New(s, pctx).
 		WithEmbed(msgbuilder.NewEmbed().
 			WithTitle("What do you want to change?").
 			WithColor(stdcolor.Default).
@@ -246,7 +256,7 @@ func (setup *Setup) modifySetupInteractive(
 		return repository.ChannelSettings{}, errors.Abort
 	}
 
-	w := wizard.New(s, ctx)
+	w := wizard.New(s, pctx)
 	for _, s := range steps {
 		w.AddStep(s)
 	}

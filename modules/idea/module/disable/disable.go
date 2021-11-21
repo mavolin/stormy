@@ -1,6 +1,9 @@
 package disable
 
 import (
+	"context"
+	"time"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/mavolin/adam/pkg/impl/command"
 	"github.com/mavolin/adam/pkg/impl/restriction"
@@ -33,8 +36,11 @@ func New(r repository.ChannelSettingsRepository) *Disable {
 	}
 }
 
-func (d *Disable) Invoke(_ *state.State, ctx *plugin.Context) (interface{}, error) {
-	if err := d.repo.DisableIdeaChannel(ctx.ChannelID); err != nil {
+func (d *Disable) Invoke(_ *state.State, pctx *plugin.Context) (interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := d.repo.DisableIdeaChannel(ctx, pctx.ChannelID); err != nil {
 		return nil, err
 	}
 

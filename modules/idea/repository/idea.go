@@ -8,9 +8,9 @@ import (
 )
 
 type IdeaRepository interface {
-	Idea(discord.MessageID) (*Idea, error)
-	SaveIdea(*Idea) error
-	DeleteIdea(id discord.MessageID) error
+	Idea(context.Context, discord.MessageID) (*Idea, error)
+	SaveIdea(context.Context, *Idea) error
+	DeleteIdea(ctx context.Context, id discord.MessageID) error
 
 	// ExpiringIdeas returns ideas that expire after or at the given time.
 	// If an idea expires at the given time, its idea must be higher than
@@ -19,11 +19,11 @@ type IdeaRepository interface {
 	// The returned slice must be sorted by VoteUntil in ascending order.
 	// If two deadlines match, those entries are sorted by id in ascending
 	// order.
-	ExpiringIdeas(afterT time.Time, afterID discord.MessageID, limit int) ([]*Idea, error)
+	ExpiringIdeas(ctx context.Context, afterT time.Time, afterID discord.MessageID, limit int) ([]Idea, error)
 	// ExpiredIdeas returns ideas that expired before the given time.
-	ExpiredIdeas(before time.Time) (IdeaCursor, error)
+	ExpiredIdeas(ctx context.Context, before time.Time) (IdeaCursor, error)
 	// DeleteExpiredIdeas deletes ideas that expired before the given time.
-	DeleteExpiredIdeas(before time.Time) error
+	DeleteExpiredIdeas(ctx context.Context, before time.Time) error
 }
 
 type Idea struct {

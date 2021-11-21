@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"time"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/mavolin/disstate/v4/pkg/event"
 	"github.com/mavolin/disstate/v4/pkg/state"
@@ -15,7 +18,10 @@ func (service *Service) onNewIdea(s *state.State, e *event.MessageCreate) error 
 		return nil
 	}
 
-	set, err := service.repo.IdeaChannelSettings(e.ChannelID)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	set, err := service.repo.IdeaChannelSettings(ctx, e.ChannelID)
 	if err != nil || set == nil {
 		return err
 	}
@@ -46,7 +52,10 @@ func (service *Service) onNewIdea(s *state.State, e *event.MessageCreate) error 
 	i.RepoIdea.MessageID = msg.ID
 	i.RepoIdea.ChannelID = msg.ChannelID
 
-	if err = service.saveIdea(i.RepoIdea); err != nil {
+	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err = service.saveIdea(ctx, i.RepoIdea); err != nil {
 		if set.VoteDuration > 0 {
 			return errhandler.NewInternalErrorWithDescription(e, err, "I couldn't save this idea to my database. "+
 				"This means I can't enforce mutually exclusive votes in groups, "+

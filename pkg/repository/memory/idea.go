@@ -22,7 +22,7 @@ func newIdeaRepo() *ideaRepo {
 	return &ideaRepo{ideas: make(map[discord.MessageID]idearepo.Idea)}
 }
 
-func (r *ideaRepo) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
+func (r *ideaRepo) Idea(_ context.Context, messageID discord.MessageID) (*idearepo.Idea, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -34,7 +34,7 @@ func (r *ideaRepo) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
 	return &i, nil
 }
 
-func (r *ideaRepo) SaveIdea(idea *idearepo.Idea) error {
+func (r *ideaRepo) SaveIdea(_ context.Context, idea *idearepo.Idea) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -42,7 +42,7 @@ func (r *ideaRepo) SaveIdea(idea *idearepo.Idea) error {
 	return nil
 }
 
-func (r *ideaRepo) DeleteIdea(messageID discord.MessageID) error {
+func (r *ideaRepo) DeleteIdea(_ context.Context, messageID discord.MessageID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -50,8 +50,12 @@ func (r *ideaRepo) DeleteIdea(messageID discord.MessageID) error {
 	return nil
 }
 
-func (r *ideaRepo) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, limit int) ([]*idearepo.Idea, error) {
-	ideas := make([]*idearepo.Idea, 0, limit)
+func (r *ideaRepo) ExpiringIdeas(
+	_ context.Context, afterT time.Time, afterID discord.MessageID,
+	limit int,
+) ([]idearepo.Idea,
+	error) {
+	ideas := make([]idearepo.Idea, 0, limit)
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -63,8 +67,6 @@ func (r *ideaRepo) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, li
 			continue
 		}
 
-		idea := idea
-
 		i := sort.Search(len(ideas), func(i int) bool {
 			cmp := ideas[i]
 			return cmp.VoteUntil.After(*idea.VoteUntil) ||
@@ -72,15 +74,15 @@ func (r *ideaRepo) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, li
 		})
 		if i > len(ideas) {
 			if i < limit {
-				ideas = append(ideas, &idea)
+				ideas = append(ideas, idea)
 			}
 		} else {
 			if len(ideas) < limit {
-				ideas = append(ideas, &idea)
+				ideas = append(ideas, idea)
 			}
 
 			copy(ideas[i+1:], ideas[i:])
-			ideas[i] = &idea
+			ideas[i] = idea
 		}
 	}
 
@@ -91,7 +93,7 @@ func (r *ideaRepo) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, li
 	return ideas, nil
 }
 
-func (r *ideaRepo) ExpiredIdeas(before time.Time) (idearepo.IdeaCursor, error) {
+func (r *ideaRepo) ExpiredIdeas(_ context.Context, before time.Time) (idearepo.IdeaCursor, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -109,7 +111,7 @@ func (r *ideaRepo) ExpiredIdeas(before time.Time) (idearepo.IdeaCursor, error) {
 	return newIdeaCursor(ideas), nil
 }
 
-func (r *ideaRepo) DeleteExpiredIdeas(before time.Time) error {
+func (r *ideaRepo) DeleteExpiredIdeas(_ context.Context, before time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

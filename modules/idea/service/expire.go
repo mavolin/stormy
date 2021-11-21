@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/dustin/go-humanize"
 	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/utils/discorderr"
-	"github.com/mavolin/adam/pkg/utils/duration"
 	"github.com/mavolin/disstate/v4/pkg/state"
 	"go.uber.org/multierr"
 
@@ -19,7 +19,10 @@ import (
 func (service *Service) countExpiredVotes(s *state.State, t time.Time) error {
 	service.log.Info("checking if any vote counts are past due")
 
-	cursor, err := service.repo.ExpiredIdeas(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	cursor, err := service.repo.ExpiredIdeas(ctx, t)
 	if err != nil {
 		return nil
 	}
@@ -75,7 +78,10 @@ func (service *Service) countExpiredVotes(s *state.State, t time.Time) error {
 
 	close(work)
 
-	err = service.repo.DeleteExpiredIdeas(t)
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = service.repo.DeleteExpiredIdeas(ctx, t)
 
 	wg.Wait()
 
@@ -106,22 +112,17 @@ func (service *Service) countExpiredVote(s *state.State, i *repository.Idea) err
 
 	e := msg.Embeds[0]
 
-	delay := duration.Format(time.Since(e.Timestamp.Time()))
-
 	d := format.Votes(i, msg)
+
+	delay := humanize.RelTime(e.Timestamp.Time(), time.Now(), "after", "before")
 	d.RatingField.Value += "\n\nI was offline during the voting deadline. " +
-		"The results you see here are from " + delay + " after the deadline."
+		"The results you see here are from " + delay + " the deadline."
 
 	// delete the deadline notice, it's not relevant anymore
-	e.Footer = new(discord.EmbedFooter)
-	e.Timestamp = discord.Timestamp{}
+	e.Footer = &discord.EmbedFooter{Text: "Original voting deadline:"}
 	e.Color = d.Color
 
 	e.Fields = append(e.Fields, d.RatingField)
-
-	if d.SectionVotesField != nil {
-		e.Fields = append(e.Fields, *d.SectionVotesField)
-	}
 
 	_, err = s.EditEmbeds(i.ChannelID, i.MessageID, e)
 	return errors.WithStack(err)

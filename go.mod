@@ -12,7 +12,7 @@ require (
 	github.com/mavolin/disstate/v4 v4.0.0-20211107172356-412cf092bcde
 	github.com/mavolin/sentryadam v0.0.0-20210919160207-0d878e0e423d
 	github.com/stretchr/testify v1.7.0
-	go.mongodb.org/mongo-driver v1.7.4 // indirect
+	go.mongodb.org/mongo-driver v1.7.4
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.0
 )

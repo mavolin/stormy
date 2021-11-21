@@ -54,7 +54,16 @@ func run(l *zap.SugaredLogger) error {
 		return err
 	}
 
-	repo := setup.Repository(setup.RepositoryOptions{Logger: l})
+	repo, err := setup.Repository(setup.RepositoryOptions{
+		MongoURI:    c.Mongo.URI,
+		MongoDBName: c.Mongo.DBName,
+		ShardIDs:    []int{0},
+		NumShards:   0,
+		Logger:      l,
+	})
+	if err != nil {
+		return err
+	}
 
 	b, err := setup.Bot(setup.BotOptions{
 		Token:        c.BotToken,

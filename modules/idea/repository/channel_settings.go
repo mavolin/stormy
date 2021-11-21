@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -13,9 +14,9 @@ import (
 var ErrChannelAlreadyDisabled = errors.NewUserInfo("Brainstorming is already disabled in this channel.")
 
 type ChannelSettingsRepository interface {
-	DisableIdeaChannel(discord.ChannelID) error
-	IdeaChannelSettings(discord.ChannelID) (*ChannelSettings, error)
-	SetIdeaChannelSettings(discord.ChannelID, ChannelSettings) error
+	DisableIdeaChannel(context.Context, discord.ChannelID) error
+	IdeaChannelSettings(context.Context, discord.ChannelID) (*ChannelSettings, error)
+	SetIdeaChannelSettings(context.Context, discord.ChannelID, ChannelSettings) error
 }
 
 type ChannelSettings struct {

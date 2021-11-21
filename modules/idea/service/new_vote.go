@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"time"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/i18n"
@@ -22,7 +25,10 @@ func (service *Service) onReactionAdd(s *state.State, e *event.MessageReactionAd
 	}
 
 	return service.sf.DoAsync(e.MessageID, func() error {
-		i, err := service.idea(e.MessageID)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		i, err := service.idea(ctx, e.MessageID)
 		if err != nil || i == nil {
 			return err
 		}

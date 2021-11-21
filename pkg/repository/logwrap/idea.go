@@ -1,6 +1,7 @@
 package logwrap
 
 import (
+	"context"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -8,8 +9,9 @@ import (
 	idearepo "github.com/mavolin/stormy/modules/idea/repository"
 )
 
-func (w *Wrapper) IdeaChannelSettings(channelID discord.ChannelID) (*idearepo.ChannelSettings, error) {
-	s, err := w.r.IdeaChannelSettings(channelID)
+func (w *Wrapper) IdeaChannelSettings(ctx context.Context, channelID discord.ChannelID) (*idearepo.ChannelSettings,
+	error) {
+	s, err := w.r.IdeaChannelSettings(ctx, channelID)
 
 	w.l.With(
 		"channel_id", channelID,
@@ -20,8 +22,11 @@ func (w *Wrapper) IdeaChannelSettings(channelID discord.ChannelID) (*idearepo.Ch
 	return s, err
 }
 
-func (w *Wrapper) SetIdeaChannelSettings(channelID discord.ChannelID, s idearepo.ChannelSettings) error {
-	err := w.r.SetIdeaChannelSettings(channelID, s)
+func (w *Wrapper) SetIdeaChannelSettings(
+	ctx context.Context, channelID discord.ChannelID,
+	s idearepo.ChannelSettings,
+) error {
+	err := w.r.SetIdeaChannelSettings(ctx, channelID, s)
 
 	w.l.With(
 		"channel_id", channelID,
@@ -32,8 +37,8 @@ func (w *Wrapper) SetIdeaChannelSettings(channelID discord.ChannelID, s idearepo
 	return err
 }
 
-func (w *Wrapper) DisableIdeaChannel(channelID discord.ChannelID) error {
-	err := w.r.DisableIdeaChannel(channelID)
+func (w *Wrapper) DisableIdeaChannel(ctx context.Context, channelID discord.ChannelID) error {
+	err := w.r.DisableIdeaChannel(ctx, channelID)
 
 	w.l.With(
 		"channel_id", channelID,
@@ -43,8 +48,8 @@ func (w *Wrapper) DisableIdeaChannel(channelID discord.ChannelID) error {
 	return err
 }
 
-func (w *Wrapper) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
-	i, err := w.r.Idea(messageID)
+func (w *Wrapper) Idea(ctx context.Context, messageID discord.MessageID) (*idearepo.Idea, error) {
+	i, err := w.r.Idea(ctx, messageID)
 
 	w.l.With(
 		"message_id", messageID,
@@ -55,8 +60,8 @@ func (w *Wrapper) Idea(messageID discord.MessageID) (*idearepo.Idea, error) {
 	return i, err
 }
 
-func (w *Wrapper) SaveIdea(idea *idearepo.Idea) error {
-	err := w.r.SaveIdea(idea)
+func (w *Wrapper) SaveIdea(ctx context.Context, idea *idearepo.Idea) error {
+	err := w.r.SaveIdea(ctx, idea)
 
 	w.l.With(
 		"idea", idea,
@@ -66,8 +71,8 @@ func (w *Wrapper) SaveIdea(idea *idearepo.Idea) error {
 	return err
 }
 
-func (w *Wrapper) DeleteIdea(messageID discord.MessageID) error {
-	err := w.r.DeleteIdea(messageID)
+func (w *Wrapper) DeleteIdea(ctx context.Context, messageID discord.MessageID) error {
+	err := w.r.DeleteIdea(ctx, messageID)
 
 	w.l.With(
 		"message_id", messageID,
@@ -77,8 +82,12 @@ func (w *Wrapper) DeleteIdea(messageID discord.MessageID) error {
 	return err
 }
 
-func (w *Wrapper) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, limit int) ([]*idearepo.Idea, error) {
-	i, err := w.r.ExpiringIdeas(afterT, afterID, limit)
+func (w *Wrapper) ExpiringIdeas(
+	ctx context.Context, afterT time.Time, afterID discord.MessageID,
+	limit int,
+) ([]idearepo.Idea,
+	error) {
+	i, err := w.r.ExpiringIdeas(ctx, afterT, afterID, limit)
 
 	w.l.With(
 		"after_t", afterT,
@@ -91,8 +100,8 @@ func (w *Wrapper) ExpiringIdeas(afterT time.Time, afterID discord.MessageID, lim
 	return i, err
 }
 
-func (w *Wrapper) ExpiredIdeas(t time.Time) (idearepo.IdeaCursor, error) {
-	c, err := w.r.ExpiredIdeas(t)
+func (w *Wrapper) ExpiredIdeas(ctx context.Context, t time.Time) (idearepo.IdeaCursor, error) {
+	c, err := w.r.ExpiredIdeas(ctx, t)
 
 	w.l.With(
 		"t", t,
@@ -103,8 +112,8 @@ func (w *Wrapper) ExpiredIdeas(t time.Time) (idearepo.IdeaCursor, error) {
 	return c, err
 }
 
-func (w *Wrapper) DeleteExpiredIdeas(t time.Time) error {
-	err := w.r.DeleteExpiredIdeas(t)
+func (w *Wrapper) DeleteExpiredIdeas(ctx context.Context, t time.Time) error {
+	err := w.r.DeleteExpiredIdeas(ctx, t)
 
 	w.l.With(
 		"t", t,

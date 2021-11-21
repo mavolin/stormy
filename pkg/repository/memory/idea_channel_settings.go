@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -19,7 +20,9 @@ func newIdeaChannelSettingsRepo() *ideaChannelSettingsRepo {
 	return &ideaChannelSettingsRepo{settings: make(map[discord.ChannelID]idearepo.ChannelSettings)}
 }
 
-func (r *ideaChannelSettingsRepo) IdeaChannelSettings(channelID discord.ChannelID) (*idearepo.ChannelSettings, error) {
+func (r *ideaChannelSettingsRepo) IdeaChannelSettings(
+	_ context.Context, channelID discord.ChannelID,
+) (*idearepo.ChannelSettings, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -32,7 +35,7 @@ func (r *ideaChannelSettingsRepo) IdeaChannelSettings(channelID discord.ChannelI
 }
 
 func (r *ideaChannelSettingsRepo) SetIdeaChannelSettings(
-	channelID discord.ChannelID, s idearepo.ChannelSettings,
+	_ context.Context, channelID discord.ChannelID, s idearepo.ChannelSettings,
 ) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -41,7 +44,7 @@ func (r *ideaChannelSettingsRepo) SetIdeaChannelSettings(
 	return nil
 }
 
-func (r *ideaChannelSettingsRepo) DisableIdeaChannel(channelID discord.ChannelID) error {
+func (r *ideaChannelSettingsRepo) DisableIdeaChannel(_ context.Context, channelID discord.ChannelID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

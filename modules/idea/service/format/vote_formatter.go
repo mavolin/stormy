@@ -31,17 +31,20 @@ func newVoteFormatter(i *repository.Idea, msg *discord.Message) *voteFormatter {
 }
 
 type VoteData struct {
-	RatingField       discord.EmbedField
-	SectionVotesField *discord.EmbedField
-	Color             discord.Color
+	RatingField discord.EmbedField
+	Color       discord.Color
 }
 
 func (f *voteFormatter) format() (d VoteData) {
 	f.calcCounts()
 
 	f.rating()
+	if len(f.i.GlobalSectionEmojis) != 0 || len(f.i.Groups) != 0 {
+		f.sectionVotes()
+	}
+
 	d.RatingField = discord.EmbedField{
-		Name:  "Overall Rating",
+		Name:  "━━━━━━━━━━",
 		Value: f.b.String(),
 	}
 
@@ -52,16 +55,6 @@ func (f *voteFormatter) format() (d VoteData) {
 		d.Color = stdcolor.Yellow
 	default:
 		d.Color = stdcolor.Green
-	}
-
-	if len(f.i.GlobalSectionEmojis) == 0 && len(f.i.Groups) == 0 {
-		return d
-	}
-
-	f.sectionVotes()
-	d.SectionVotesField = &discord.EmbedField{
-		Name:  "Section Votes",
-		Value: f.b.String(),
 	}
 
 	return d
@@ -105,30 +98,32 @@ GlobalSections:
 	}
 }
 
-func (f *voteFormatter) rating() string {
+func (f *voteFormatter) rating() {
+	f.b.WriteString("**Overall Rating:** ")
+
 	es := f.i.VoteType.Emojis()
 	for _, e := range es {
 		_, ok := f.counts[e]
 		if !ok {
 			f.b.WriteString("*Could not calculate as some reactions were deleted*")
-			return f.b.String()
 		}
 	}
 
 	if len(es) == 2 {
-		return f.twoEmojiRating(es[0], es[1])
+		f.twoEmojiRating(es[0], es[1])
+		return
 	}
 
-	return f.weightedRating(es)
+	f.weightedRating(es)
 }
 
-func (f *voteFormatter) twoEmojiRating(posEmoji, negEmoji string) string {
+func (f *voteFormatter) twoEmojiRating(posEmoji, negEmoji string) {
 	posCount := f.counts[posEmoji]
 	negCount := f.counts[negEmoji]
 
 	if posCount+negCount <= 0 {
 		f.b.WriteString("-/- %")
-		return f.b.String()
+		return
 	}
 
 	// get the average in percent
@@ -140,22 +135,20 @@ func (f *voteFormatter) twoEmojiRating(posEmoji, negEmoji string) string {
 	rating = math.Round(rating)
 	rating /= 10 // scale from 0 to 100
 
-	f.b.WriteString(fmt.Sprintf("**%.1f%%**\n\n", rating))
+	f.b.WriteString(fmt.Sprintf("%.1f%%\n", rating))
 
 	f.b.WriteString(posEmoji)
 	f.b.WriteString(": ")
 	f.b.WriteString(strconv.Itoa(posCount))
-	f.b.WriteString("x\n")
+	f.b.WriteString("x  ")
 
 	f.b.WriteString(negEmoji)
 	f.b.WriteString(": ")
 	f.b.WriteString(strconv.Itoa(negCount))
 	f.b.WriteString("x")
-
-	return f.b.String()
 }
 
-func (f *voteFormatter) weightedRating(emojis []string) string {
+func (f *voteFormatter) weightedRating(emojis []string) {
 	var totalVotes int
 	var weightedVotes int
 
@@ -163,7 +156,7 @@ func (f *voteFormatter) weightedRating(emojis []string) string {
 		counts := f.counts[e]
 
 		totalVotes += counts
-		weightedVotes += (i + 1) * counts
+		weightedVotes += (len(emojis) - i) * counts
 	}
 
 	// get the average rating from 1 to len(emojis)
@@ -178,25 +171,26 @@ func (f *voteFormatter) weightedRating(emojis []string) string {
 	// shift back
 	rating /= 10
 
-	f.b.WriteString(fmt.Sprintf("**%.1f/%d**\n", rating, len(emojis)))
+	f.b.WriteString(fmt.Sprintf("%.1f/%d\n", rating, len(emojis)))
 
-	for _, e := range emojis {
-		f.b.WriteRune('\n')
+	for i, e := range emojis {
+		if i > 0 {
+			f.b.WriteString("  ")
+		}
+
 		f.b.WriteString(e)
 		f.b.WriteString(": ")
 		f.b.WriteString(strconv.Itoa(f.counts[e]))
 		f.b.WriteRune('x')
 	}
-
-	return f.b.String()
 }
 
-func (f *voteFormatter) sectionVotes() string {
-	f.b.Reset()
+func (f *voteFormatter) sectionVotes() {
+	f.b.WriteString("\n\n")
 
 	for i, e := range f.i.GlobalSectionEmojis {
 		if i > 0 {
-			f.b.WriteRune('\n')
+			f.b.WriteString("  ")
 		}
 
 		f.b.WriteString(e)
@@ -205,24 +199,26 @@ func (f *voteFormatter) sectionVotes() string {
 		count, ok := f.counts[e]
 		if !ok {
 			f.b.WriteString("*Reaction was removed*")
-		} else {
-			f.b.WriteString(humanize.Comma(int64(count)))
+			continue
 		}
 
+		f.b.WriteString(humanize.Comma(int64(count)))
 		f.b.WriteRune('x')
 	}
 
-	for _, g := range f.i.Groups {
-		if f.b.Len() > 0 {
-			f.b.WriteString("\n\n")
+	for i, g := range f.i.Groups {
+		if i > 0 || len(f.i.GlobalSectionEmojis) > 0 {
+			f.b.WriteString("\n")
 		}
 
 		f.b.WriteString("**")
 		f.b.WriteString(g.Title)
-		f.b.WriteString("**")
+		f.b.WriteString("**\n")
 
-		for _, e := range g.Emojis {
-			f.b.WriteRune('\n')
+		for j, e := range g.Emojis {
+			if j > 0 {
+				f.b.WriteString("  ")
+			}
 
 			f.b.WriteString(e)
 			f.b.WriteString(": ")
@@ -230,13 +226,11 @@ func (f *voteFormatter) sectionVotes() string {
 			count, ok := f.counts[e]
 			if !ok {
 				f.b.WriteString("*Reaction was removed*")
-			} else {
-				f.b.WriteString(humanize.Comma(int64(count)))
+				continue
 			}
 
+			f.b.WriteString(humanize.Comma(int64(count)))
 			f.b.WriteString("x")
 		}
 	}
-
-	return f.b.String()
 }

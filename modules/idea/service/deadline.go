@@ -2,6 +2,7 @@ package service
 
 import (
 	"container/list"
+	"context"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -24,7 +25,10 @@ func (service *Service) countVotes(s *state.State, i *repository.Idea) {
 			"guild_id", i.GuildID,
 		).Info("counting votes")
 
-		if err := service.deleteIdea(i.MessageID); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		if err := service.deleteIdea(ctx, i.MessageID); err != nil {
 			return errors.WithStack(err)
 		}
 
@@ -44,15 +48,9 @@ func (service *Service) countVotes(s *state.State, i *repository.Idea) {
 		d := format.Votes(i, msg)
 
 		e.Footer = &discord.EmbedFooter{Text: "Voting ended:"}
-
 		e.Color = d.Color
 
-		e.Fields = append(e.Fields, discord.EmbedField{Name: "━━━━━━━━━━", Value: "​"})
 		e.Fields = append(e.Fields, d.RatingField)
-
-		if d.SectionVotesField != nil {
-			e.Fields = append(e.Fields, *d.SectionVotesField)
-		}
 
 		_, err = s.EditEmbeds(i.ChannelID, i.MessageID, e)
 		return errors.WithStack(err)
@@ -90,7 +88,10 @@ func newDeadlineWatcher(service *Service, state *state.State, r repository.IdeaR
 }
 
 func (w *deadlineWatcher) start(t time.Time) error {
-	ideas, err := w.r.ExpiringIdeas(t, 0, maxDeadlineQueueLen)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ideas, err := w.r.ExpiringIdeas(ctx, t, 0, maxDeadlineQueueLen)
 	if err != nil {
 		return err
 	}
@@ -147,10 +148,14 @@ func (w *deadlineWatcher) loop() {
 				frontVal = w.queue.Front().Value.(*repository.Idea)
 				t.Reset(time.Until(*frontVal.VoteUntil))
 			} else {
-				ideas, err := w.r.ExpiringIdeas(*frontVal.VoteUntil, frontVal.MessageID, maxDeadlineQueueLen)
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+				ideas, err := w.r.ExpiringIdeas(ctx, *frontVal.VoteUntil, frontVal.MessageID, maxDeadlineQueueLen)
 				if err != nil {
 					w.service.errhandler.Capture(err)
 				}
+
+				cancel()
 
 				for _, i := range ideas {
 					w.queue.PushBack(i)
