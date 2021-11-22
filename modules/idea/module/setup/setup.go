@@ -239,7 +239,7 @@ func (setup *Setup) modifySetupInteractive(
 			WithColor(stdcolor.Default).
 			WithDescription("Please select the settings you want to change in this channel.")).
 		WithComponent(msgbuilder.NewSelect(&steps).
-			WithBounds(1, 5).
+			WithBounds(1, 4).
 			With(msgbuilder.NewSelectOption("Vote Type", voteTypeStep(&set.VoteType))).
 			With(msgbuilder.NewSelectOption("Vote Duration", voteDurationStep(&set.VoteDuration))).
 			With(msgbuilder.NewSelectOption("Anonymity", anonymousStep(&set.Anonymous))).
