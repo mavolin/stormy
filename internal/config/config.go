@@ -12,8 +12,7 @@ import (
 
 type (
 	Config struct {
-		BotToken string           `env:"STORMY_BOT_TOKEN,notEmpty"`
-		Owners   []discord.UserID `env:"STORMY_OWNERS"`
+		BotToken string `env:"STORMY_BOT_TOKEN,notEmpty"`
 
 		Status   discord.Status `env:"STORMY_STATUS"`
 		Activity Activity
