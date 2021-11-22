@@ -7,7 +7,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/mavolin/adam/pkg/bot"
-	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/impl/replier"
 	"github.com/mavolin/adam/pkg/plugin"
 	"github.com/mavolin/adam/pkg/utils/discorderr"
@@ -36,9 +35,6 @@ func NewMiddleware(delay time.Duration) bot.Middleware {
 			ctx.Replier = t
 
 			nextErr := next(s, ctx)
-			if nextErr != nil && !errors.Is(nextErr, errors.Abort) {
-				return nextErr
-			}
 
 			rm()
 
@@ -58,10 +54,10 @@ func NewMiddleware(delay time.Duration) bot.Middleware {
 
 			err := s.DeleteMessages(ctx.ChannelID, ids, "")
 			if err != nil && !discorderr.Is(discorderr.As(err), discorderr.UnknownResource...) {
-				return errors.WithStack(err)
+				ctx.HandleErrorSilently(err)
 			}
 
-			return nextErr // either nil or errors.Abort
+			return nextErr
 		}
 	}
 }
