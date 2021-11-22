@@ -5,6 +5,7 @@ import (
 	"github.com/mavolin/adam/pkg/bot"
 	"github.com/mavolin/adam/pkg/errors"
 	"github.com/mavolin/adam/pkg/plugin"
+	"github.com/mavolin/adam/pkg/utils/discorderr"
 	"github.com/mavolin/disstate/v4/pkg/state"
 	"github.com/mavolin/sentryadam/pkg/sentryadam"
 	"go.uber.org/zap"
@@ -17,7 +18,16 @@ import (
 // assigned *sentry.Hub and *zap.SugaredLogger from the context using
 // sentryadam.Hub.
 func ErrorLog(ctx *plugin.Context, err *errors.InternalError) {
-	sentryadam.Hub(ctx).CaptureException(err)
+	h := sentryadam.Hub(ctx)
+
+	if derr := discorderr.As(err); derr != nil {
+		h.WithScope(func(s *sentry.Scope) {
+			s.SetExtra("discord_error_body", string(derr.Body))
+			h.CaptureException(err)
+		})
+	} else {
+		h.CaptureException(err)
+	}
 
 	zapadam.Get(ctx).
 		With("err", err.Unwrap()).
@@ -64,7 +74,15 @@ func NewStateErrorHandler(s *state.State, l *zap.SugaredLogger, h *sentry.Hub) f
 			}
 		}
 
-		h.CaptureException(err)
+		if derr := discorderr.As(err); derr != nil {
+			h.WithScope(func(s *sentry.Scope) {
+				s.SetExtra("discord_error_body", string(derr.Body))
+				h.CaptureException(err)
+			})
+		} else {
+			h.CaptureException(err)
+		}
+
 		l.Error(err)
 	}
 }
