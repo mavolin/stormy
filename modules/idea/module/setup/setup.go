@@ -135,7 +135,7 @@ func (setup *Setup) firstTimeSetup(s *state.State, pctx *plugin.Context) (interf
 		if err := w.Start(); err != nil {
 			if errors.Is(err, errors.Abort) {
 				return msgbuilder.NewEmbed().
-					WithTitle("Cancel").
+					WithTitle("Canceled").
 					WithColor(stdcolor.Yellow).
 					WithDescription("The setup has been cancelled."), nil
 			}
@@ -208,7 +208,7 @@ func (setup *Setup) modifySetup(
 
 	if !ok {
 		return msgbuilder.NewEmbed().
-			WithTitle("Changes discarded").
+			WithTitle("Changes Discarded").
 			WithColor(stdcolor.Yellow).
 			WithDescription("I've discarded the changes you made. Everything remains as is."), nil
 	}
@@ -222,7 +222,7 @@ func (setup *Setup) modifySetup(
 	}
 
 	return msgbuilder.NewEmbed().
-		WithTitle("Changes saved").
+		WithTitle("Changes Saved").
 		WithColor(stdcolor.Green).
 		WithDescription("I've saved your changes."), nil
 }

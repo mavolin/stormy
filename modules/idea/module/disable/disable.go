@@ -45,7 +45,7 @@ func (d *Disable) Invoke(_ *state.State, pctx *plugin.Context) (interface{}, err
 	}
 
 	return msgbuilder.NewEmbed().
-		WithTitle("Brainstorming").
+		WithTitle("Brainstorming disabled").
 		WithColor(stdcolor.Green).
 		WithDescription("Brainstorming has been successfully disabled in this channel."), nil
 }
