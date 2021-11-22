@@ -67,7 +67,6 @@ func run(l *zap.SugaredLogger) error {
 
 	b, err := setup.Bot(setup.BotOptions{
 		Token:        c.BotToken,
-		Owners:       c.Owners,
 		Status:       c.Status,
 		ActivityType: c.Activity.Type,
 		ActivityName: c.Activity.Name,
